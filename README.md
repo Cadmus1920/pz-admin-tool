@@ -120,7 +120,7 @@ The tool saves your connection settings to `pz_admin_config.json`:
 {
     "host": "127.0.0.1",
     "port": "16261",
-    "server_path": "/home/zomboid/Zomboid"
+    "server_path": "/home/username/Zomboid"
 }
 ```
 
@@ -206,9 +206,9 @@ sudo netstat -tulpn | grep 16261
 **Solutions:**
 1. Click **Auto-Detect** button
 2. Manually set path to server **data** directory:
-   - Usually: `/home/zomboid/Zomboid/`
+   - Usually: `/home/username/Zomboid/`
    - NOT the steamcmd install directory
-3. Check config file exists at `ServerPath/Server/servertest.ini`
+3. Check config file exists at `ServerPath/Server/server.ini`
 
 ## Architecture
 
