@@ -248,106 +248,199 @@ class PZServerAdmin(tk.Tk):
         style = ttk.Style()
         
         if theme == "dark":
-            # Dark theme colors
-            bg_color = "#2b2b2b"
-            fg_color = "#ffffff"
-            select_bg = "#404040"
-            select_fg = "#ffffff"
-            entry_bg = "#3c3c3c"
-            entry_fg = "#ffffff"
+            # Dark theme colors - consistent palette
+            bg_main = "#2b2b2b"      # Main background
+            bg_widget = "#353535"     # Widget background (slightly lighter)
+            bg_input = "#404040"      # Input fields
+            fg_main = "#e0e0e0"       # Main text
+            fg_bright = "#ffffff"     # Bright text
+            border = "#1a1a1a"        # Borders (darker)
+            select_bg = "#505050"     # Selection background
             
-            # Configure ttk styles for dark theme
-            style.theme_use('default')
+            # Use 'clam' theme as base - it handles colors better
+            try:
+                style.theme_use('clam')
+            except:
+                style.theme_use('default')
             
-            style.configure(".", background=bg_color, foreground=fg_color,
-                          fieldbackground=entry_bg, bordercolor="#404040")
-            style.configure("TFrame", background=bg_color)
-            style.configure("TLabel", background=bg_color, foreground=fg_color)
-            style.configure("TLabelframe", background=bg_color, foreground=fg_color)
-            style.configure("TLabelframe.Label", background=bg_color, foreground=fg_color)
-            style.configure("TButton", background="#404040", foreground=fg_color)
-            style.configure("TCheckbutton", background=bg_color, foreground=fg_color)
-            style.configure("TRadiobutton", background=bg_color, foreground=fg_color)
-            style.configure("TNotebook", background=bg_color, bordercolor="#404040")
-            style.configure("TNotebook.Tab", background="#404040", foreground=fg_color)
-            style.map("TNotebook.Tab", background=[("selected", "#2b2b2b")])
+            # Configure all ttk styles consistently
+            style.configure(".", background=bg_main, foreground=fg_main,
+                          fieldbackground=bg_input, bordercolor=border,
+                          darkcolor=bg_main, lightcolor=bg_widget,
+                          troughcolor=bg_widget, selectbackground=select_bg,
+                          selectforeground=fg_bright)
             
-            # Entry and Combobox widgets
-            style.configure("TEntry", fieldbackground=entry_bg, foreground=entry_fg,
-                          insertcolor=entry_fg, bordercolor="#404040")
-            style.configure("TSpinbox", fieldbackground=entry_bg, foreground=entry_fg,
-                          insertcolor=entry_fg, bordercolor="#404040")
-            style.configure("TCombobox", fieldbackground=entry_bg, foreground=entry_fg,
-                          selectbackground=select_bg, selectforeground=select_fg,
-                          bordercolor="#404040")
-            style.map("TCombobox", fieldbackground=[("readonly", entry_bg)])
-            style.map("TCombobox", foreground=[("readonly", entry_fg)])
+            style.configure("TFrame", background=bg_main)
+            style.configure("TLabel", background=bg_main, foreground=fg_main)
+            style.configure("TLabelframe", background=bg_main, foreground=fg_main,
+                          bordercolor=border, darkcolor=bg_main, lightcolor=bg_widget)
+            style.configure("TLabelframe.Label", background=bg_main, foreground=fg_main)
+            
+            style.configure("TButton", background=bg_widget, foreground=fg_main,
+                          bordercolor=border, darkcolor=bg_main, lightcolor=bg_widget)
+            style.map("TButton",
+                     background=[('active', select_bg), ('pressed', border)],
+                     foreground=[('active', fg_bright)])
+            
+            style.configure("TCheckbutton", background=bg_main, foreground=fg_main)
+            style.map("TCheckbutton",
+                     background=[('active', bg_main)],
+                     foreground=[('active', fg_bright)])
+            
+            style.configure("TRadiobutton", background=bg_main, foreground=fg_main)
+            style.map("TRadiobutton",
+                     background=[('active', bg_main)],
+                     foreground=[('active', fg_bright)])
+            
+            style.configure("TNotebook", background=bg_main, bordercolor=border,
+                          darkcolor=bg_main, lightcolor=bg_widget)
+            style.configure("TNotebook.Tab", background=bg_widget, foreground=fg_main,
+                          bordercolor=border, darkcolor=bg_main, lightcolor=bg_widget)
+            style.map("TNotebook.Tab",
+                     background=[("selected", bg_main), ('active', select_bg)],
+                     foreground=[("selected", fg_bright), ('active', fg_bright)],
+                     expand=[("selected", [1, 1, 1, 0])])
+            
+            # Entry and Spinbox
+            style.configure("TEntry", fieldbackground=bg_input, foreground=fg_bright,
+                          insertcolor=fg_bright, bordercolor=border,
+                          darkcolor=bg_main, lightcolor=bg_widget)
+            style.map("TEntry",
+                     fieldbackground=[('focus', bg_input)],
+                     foreground=[('focus', fg_bright)])
+            
+            style.configure("TSpinbox", fieldbackground=bg_input, foreground=fg_bright,
+                          insertcolor=fg_bright, bordercolor=border,
+                          darkcolor=bg_main, lightcolor=bg_widget,
+                          arrowcolor=fg_main)
+            style.map("TSpinbox",
+                     fieldbackground=[('focus', bg_input)],
+                     foreground=[('focus', fg_bright)])
+            
+            # Combobox
+            style.configure("TCombobox", fieldbackground=bg_input, foreground=fg_bright,
+                          selectbackground=select_bg, selectforeground=fg_bright,
+                          bordercolor=border, darkcolor=bg_main, lightcolor=bg_widget,
+                          arrowcolor=fg_main)
+            style.map("TCombobox",
+                     fieldbackground=[("readonly", bg_input), ('focus', bg_input)],
+                     foreground=[("readonly", fg_bright), ('focus', fg_bright)],
+                     selectbackground=[('focus', select_bg)])
             
             # Treeview
-            style.configure("Treeview", background=entry_bg, foreground=entry_fg,
-                          fieldbackground=entry_bg, bordercolor="#404040")
-            style.configure("Treeview.Heading", background="#404040", foreground=fg_color)
-            style.map("Treeview", background=[("selected", select_bg)],
-                     foreground=[("selected", select_fg)])
+            style.configure("Treeview", background=bg_input, foreground=fg_bright,
+                          fieldbackground=bg_input, bordercolor=border)
+            style.configure("Treeview.Heading", background=bg_widget, foreground=fg_main,
+                          bordercolor=border, relief="flat")
+            style.map("Treeview",
+                     background=[("selected", select_bg)],
+                     foreground=[("selected", fg_bright)])
+            style.map("Treeview.Heading",
+                     background=[('active', select_bg)],
+                     foreground=[('active', fg_bright)])
+            
+            # Scale (for sliders)
+            style.configure("TScale", background=bg_main, troughcolor=bg_widget,
+                          bordercolor=border, darkcolor=bg_main, lightcolor=bg_widget)
             
             # Configure main window
-            self.configure(bg=bg_color)
+            self.configure(bg=bg_main)
             
-            # Update text widgets if they exist
+            # Update ScrolledText widgets
             if hasattr(self, 'info_text'):
-                self.info_text.configure(bg="#1e1e1e", fg=fg_color, 
-                                        insertbackground=fg_color, selectbackground=select_bg)
+                self.info_text.configure(bg=bg_input, fg=fg_bright, 
+                                        insertbackground=fg_bright, selectbackground=select_bg,
+                                        selectforeground=fg_bright)
             if hasattr(self, 'command_output'):
-                self.command_output.configure(bg="#1e1e1e", fg=fg_color,
-                                             insertbackground=fg_color, selectbackground=select_bg)
+                self.command_output.configure(bg=bg_input, fg=fg_bright,
+                                             insertbackground=fg_bright, selectbackground=select_bg,
+                                             selectforeground=fg_bright)
             if hasattr(self, 'logs_text'):
-                self.logs_text.configure(bg="#1e1e1e", fg=fg_color,
-                                        insertbackground=fg_color, selectbackground=select_bg)
+                self.logs_text.configure(bg=bg_input, fg=fg_bright,
+                                        insertbackground=fg_bright, selectbackground=select_bg,
+                                        selectforeground=fg_bright)
             
         else:  # light theme
-            # Light theme (default)
-            style.theme_use('default')
+            # Light theme - clean and consistent
+            bg_main = "#f5f5f5"
+            bg_widget = "#ffffff"
+            fg_main = "#000000"
+            border = "#d0d0d0"
+            select_bg = "#0078d7"
+            select_fg = "#ffffff"
             
-            # Reset to defaults
-            style.configure(".", background="#f0f0f0", foreground="black", fieldbackground="white")
-            style.configure("TFrame", background="#f0f0f0")
-            style.configure("TLabel", background="#f0f0f0", foreground="black")
-            style.configure("TLabelframe", background="#f0f0f0", foreground="black")
-            style.configure("TLabelframe.Label", background="#f0f0f0", foreground="black")
-            style.configure("TButton", background="#e0e0e0", foreground="black")
-            style.configure("TCheckbutton", background="#f0f0f0", foreground="black")
-            style.configure("TRadiobutton", background="#f0f0f0", foreground="black")
-            style.configure("TNotebook", background="#f0f0f0")
-            style.configure("TNotebook.Tab", background="#e0e0e0", foreground="black")
-            style.map("TNotebook.Tab", background=[("selected", "#f0f0f0")])
+            try:
+                style.theme_use('clam')
+            except:
+                style.theme_use('default')
             
-            # Entry and Combobox widgets
-            style.configure("TEntry", fieldbackground="white", foreground="black",
-                          insertcolor="black")
-            style.configure("TSpinbox", fieldbackground="white", foreground="black",
-                          insertcolor="black")
-            style.configure("TCombobox", fieldbackground="white", foreground="black",
-                          selectbackground="#b0b0ff", selectforeground="black")
+            # Reset to light defaults
+            style.configure(".", background=bg_main, foreground=fg_main,
+                          fieldbackground=bg_widget, bordercolor=border,
+                          selectbackground=select_bg, selectforeground=select_fg)
+            
+            style.configure("TFrame", background=bg_main)
+            style.configure("TLabel", background=bg_main, foreground=fg_main)
+            style.configure("TLabelframe", background=bg_main, foreground=fg_main,
+                          bordercolor=border)
+            style.configure("TLabelframe.Label", background=bg_main, foreground=fg_main)
+            
+            style.configure("TButton", background=bg_widget, foreground=fg_main,
+                          bordercolor=border)
+            style.map("TButton",
+                     background=[('active', '#e5e5e5'), ('pressed', '#d0d0d0')])
+            
+            style.configure("TCheckbutton", background=bg_main, foreground=fg_main)
+            style.configure("TRadiobutton", background=bg_main, foreground=fg_main)
+            
+            style.configure("TNotebook", background=bg_main, bordercolor=border)
+            style.configure("TNotebook.Tab", background="#e0e0e0", foreground=fg_main,
+                          bordercolor=border)
+            style.map("TNotebook.Tab",
+                     background=[("selected", bg_main), ('active', '#f0f0f0')],
+                     expand=[("selected", [1, 1, 1, 0])])
+            
+            # Entry and Spinbox
+            style.configure("TEntry", fieldbackground=bg_widget, foreground=fg_main,
+                          insertcolor=fg_main, bordercolor=border)
+            style.configure("TSpinbox", fieldbackground=bg_widget, foreground=fg_main,
+                          insertcolor=fg_main, bordercolor=border)
+            
+            # Combobox
+            style.configure("TCombobox", fieldbackground=bg_widget, foreground=fg_main,
+                          selectbackground=select_bg, selectforeground=select_fg,
+                          bordercolor=border)
+            style.map("TCombobox",
+                     fieldbackground=[("readonly", bg_widget)])
             
             # Treeview
-            style.configure("Treeview", background="white", foreground="black",
-                          fieldbackground="white")
-            style.configure("Treeview.Heading", background="#e0e0e0", foreground="black")
-            style.map("Treeview", background=[("selected", "#b0b0ff")],
-                     foreground=[("selected", "black")])
+            style.configure("Treeview", background=bg_widget, foreground=fg_main,
+                          fieldbackground=bg_widget, bordercolor=border)
+            style.configure("Treeview.Heading", background="#e0e0e0", foreground=fg_main,
+                          bordercolor=border, relief="flat")
+            style.map("Treeview",
+                     background=[("selected", select_bg)],
+                     foreground=[("selected", select_fg)])
             
-            self.configure(bg="#f0f0f0")
+            # Scale
+            style.configure("TScale", background=bg_main, troughcolor="#e0e0e0",
+                          bordercolor=border)
             
-            # Update text widgets
+            self.configure(bg=bg_main)
+            
+            # Update ScrolledText widgets
             if hasattr(self, 'info_text'):
-                self.info_text.configure(bg="white", fg="black", 
-                                        insertbackground="black", selectbackground="#b0b0ff")
+                self.info_text.configure(bg=bg_widget, fg=fg_main, 
+                                        insertbackground=fg_main, selectbackground=select_bg,
+                                        selectforeground=select_fg)
             if hasattr(self, 'command_output'):
-                self.command_output.configure(bg="white", fg="black",
-                                             insertbackground="black", selectbackground="#b0b0ff")
+                self.command_output.configure(bg=bg_widget, fg=fg_main,
+                                             insertbackground=fg_main, selectbackground=select_bg,
+                                             selectforeground=select_fg)
             if hasattr(self, 'logs_text'):
-                self.logs_text.configure(bg="white", fg="black",
-                                        insertbackground="black", selectbackground="#b0b0ff")
+                self.logs_text.configure(bg=bg_widget, fg=fg_main,
+                                        insertbackground=fg_main, selectbackground=select_bg,
+                                        selectforeground=select_fg)
         
         # Save preference
         self.save_appearance_settings()
@@ -413,6 +506,34 @@ Features:
 Created with ❤️ for the PZ community
 """
         messagebox.showinfo("About", about_text)
+    
+    def apply_dialog_theme(self, dialog):
+        """Apply current theme to a dialog window"""
+        theme = self.current_theme.get()
+        if theme == "dark":
+            dialog.configure(bg="#2b2b2b")
+        else:
+            dialog.configure(bg="#f5f5f5")
+    
+    def get_text_colors(self):
+        """Get text widget colors based on theme"""
+        theme = self.current_theme.get()
+        if theme == "dark":
+            return {
+                'bg': "#404040",
+                'fg': "#ffffff",
+                'insertbackground': "#ffffff",
+                'selectbackground': "#505050",
+                'selectforeground': "#ffffff"
+            }
+        else:
+            return {
+                'bg': "#ffffff",
+                'fg': "#000000",
+                'insertbackground': "#000000",
+                'selectbackground': "#0078d7",
+                'selectforeground': "#ffffff"
+            }
         
     def create_widgets(self):
         """Create the GUI widgets"""
@@ -564,7 +685,8 @@ Created with ❤️ for the PZ community
         info_text_frame = ttk.Frame(self.info_frame)
         info_text_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        self.info_text = scrolledtext.ScrolledText(info_text_frame, wrap=tk.WORD, height=20)
+        colors = self.get_text_colors()
+        self.info_text = scrolledtext.ScrolledText(info_text_frame, wrap=tk.WORD, height=20, **colors)
         self.info_text.pack(fill=tk.BOTH, expand=True)
         
         # Server Control buttons
@@ -609,7 +731,8 @@ Created with ❤️ for the PZ community
         output_frame = ttk.LabelFrame(self.commands_frame, text="Command Output", padding=10)
         output_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        self.command_output = scrolledtext.ScrolledText(output_frame, wrap=tk.WORD, height=15)
+        colors = self.get_text_colors()
+        self.command_output = scrolledtext.ScrolledText(output_frame, wrap=tk.WORD, height=15, **colors)
         self.command_output.pack(fill=tk.BOTH, expand=True)
         
     def create_mods_tab(self):
@@ -667,7 +790,8 @@ Created with ❤️ for the PZ community
         log_frame = ttk.Frame(self.logs_frame)
         log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        self.logs_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD)
+        colors = self.get_text_colors()
+        self.logs_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, **colors)
         self.logs_text.pack(fill=tk.BOTH, expand=True)
         
         btn_frame = ttk.Frame(self.logs_frame)
@@ -926,6 +1050,7 @@ Created with ❤️ for the PZ community
         dialog.geometry("400x200")
         dialog.transient(self)
         dialog.grab_set()
+        self.apply_dialog_theme(dialog)
         
         ttk.Label(dialog, text=f"Teleport {username} to another player:", 
                  font=('TkDefaultFont', 10, 'bold')).pack(pady=10)
@@ -1055,9 +1180,10 @@ Created with ❤️ for the PZ community
         """Open configuration dialog for server control commands"""
         dialog = tk.Toplevel(self)
         dialog.title("Configure Server Control Commands")
-        dialog.geometry("600x400")
+        dialog.geometry("700x500")  # Increased from 600x400
         dialog.transient(self)
         dialog.grab_set()
+        self.apply_dialog_theme(dialog)
         
         ttk.Label(dialog, text="Configure Server Control Commands", 
                  font=('TkDefaultFont', 11, 'bold')).pack(pady=10)
@@ -1847,6 +1973,7 @@ Screen:
         dialog.geometry("500x300")
         dialog.transient(self)
         dialog.grab_set()
+        self.apply_dialog_theme(dialog)
         
         ttk.Label(dialog, text="Schedule Recurring Announcement", 
                  font=('TkDefaultFont', 10, 'bold')).pack(pady=10)
@@ -1913,6 +2040,7 @@ Screen:
         dialog.geometry("500x350")
         dialog.transient(self)
         dialog.grab_set()
+        self.apply_dialog_theme(dialog)
         
         ttk.Label(dialog, text="Schedule Recurring RCON Command", 
                  font=('TkDefaultFont', 10, 'bold')).pack(pady=10)
@@ -2184,11 +2312,19 @@ class FileSelectionDialog(tk.Toplevel):
         self.lua_files = lua_files
         
         self.title("Select Configuration Files")
-        self.geometry("600x400")
+        self.geometry("700x500")  # Increased from 600x400
         
         # Make modal
         self.transient(parent)
         self.grab_set()
+        
+        # Apply theme
+        if hasattr(parent, 'current_theme'):
+            theme = parent.current_theme.get()
+            if theme == "dark":
+                self.configure(bg="#2b2b2b")
+            else:
+                self.configure(bg="#f5f5f5")
         
         self.selected_ini = None
         self.selected_lua = None
@@ -2305,7 +2441,15 @@ class SettingsEditorWindow(tk.Toplevel):
         self.lua_file = lua_file
         
         self.title(f"Server Settings Editor - {ini_file.name if ini_file else 'No File'}")
-        self.geometry("800x600")
+        self.geometry("900x700")  # Increased from 800x600
+        
+        # Apply theme from parent
+        if hasattr(parent, 'current_theme'):
+            theme = parent.current_theme.get()
+            if theme == "dark":
+                self.configure(bg="#2b2b2b")
+            else:
+                self.configure(bg="#f5f5f5")
         
         # Store original values for comparison
         self.original_values = {}
@@ -2319,6 +2463,34 @@ class SettingsEditorWindow(tk.Toplevel):
         # Create UI
         self.create_ui()
         self.load_settings()
+    
+    def get_canvas_bg(self):
+        """Get canvas background color based on theme"""
+        if hasattr(self.parent, 'current_theme'):
+            theme = self.parent.current_theme.get()
+            if theme == "dark":
+                return "#2b2b2b"
+        return "#f5f5f5"
+    
+    def get_text_colors(self):
+        """Get text widget colors based on theme"""
+        theme = self.current_theme.get()
+        if theme == "dark":
+            return {
+                'bg': "#404040",
+                'fg': "#ffffff",
+                'insertbackground': "#ffffff",
+                'selectbackground': "#505050",
+                'selectforeground': "#ffffff"
+            }
+        else:
+            return {
+                'bg': "#ffffff",
+                'fg': "#000000",
+                'insertbackground': "#000000",
+                'selectbackground': "#0078d7",
+                'selectforeground': "#ffffff"
+            }
     
     def create_ui(self):
         """Create the settings editor UI"""
@@ -2346,6 +2518,21 @@ class SettingsEditorWindow(tk.Toplevel):
         notebook.add(advanced_frame, text="Advanced")
         self.create_advanced_settings(advanced_frame)
         
+        # Loot Details
+        loot_frame = ttk.Frame(notebook)
+        notebook.add(loot_frame, text="Loot Details")
+        self.create_loot_details_settings(loot_frame)
+        
+        # World & Environment
+        world_frame = ttk.Frame(notebook)
+        notebook.add(world_frame, text="World & Environment")
+        self.create_world_settings(world_frame)
+        
+        # Survival & Health
+        survival_frame = ttk.Frame(notebook)
+        notebook.add(survival_frame, text="Survival & Health")
+        self.create_survival_settings(survival_frame)
+        
         # Buttons at bottom
         btn_frame = ttk.Frame(self)
         btn_frame.pack(fill=tk.X, padx=10, pady=10)
@@ -2358,7 +2545,7 @@ class SettingsEditorWindow(tk.Toplevel):
     
     def create_basic_settings(self, parent):
         """Create basic server settings controls"""
-        canvas = tk.Canvas(parent)
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
         
@@ -2402,7 +2589,7 @@ class SettingsEditorWindow(tk.Toplevel):
     
     def create_gameplay_settings(self, parent):
         """Create gameplay settings controls"""
-        canvas = tk.Canvas(parent)
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
         
@@ -2508,7 +2695,7 @@ class SettingsEditorWindow(tk.Toplevel):
     
     def create_zombie_settings(self, parent):
         """Create zombie settings controls"""
-        canvas = tk.Canvas(parent)
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
         
@@ -2611,7 +2798,7 @@ class SettingsEditorWindow(tk.Toplevel):
     
     def create_advanced_settings(self, parent):
         """Create advanced settings controls"""
-        canvas = tk.Canvas(parent)
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
         
@@ -2637,6 +2824,287 @@ class SettingsEditorWindow(tk.Toplevel):
         
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+    
+    def create_loot_details_settings(self, parent):
+        """Create detailed loot category settings"""
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind("<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        row = 0
+        
+        ttk.Label(scrollable_frame, text="Loot Abundance by Category (0.0 = None, 4.0 = Maximum)",
+                 font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=10)
+        row += 1
+        
+        # All detailed loot categories
+        self.add_slider_setting(scrollable_frame, 'FoodLootNew', 'Food (Fresh):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'CannedFoodLootNew', 'Canned Food:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'LiteratureLootNew', 'Literature (Books, Magazines):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'MedicalLootNew', 'Medical Supplies:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'SurvivalGearsLootNew', 'Survival Gear (Camping):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'WeaponLootNew', 'Weapons (Melee):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'RangedWeaponLootNew', 'Ranged Weapons & Attachments:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'AmmoLootNew', 'Ammunition:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'MechanicsLootNew', 'Mechanics & Car Parts:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'ClothingLootNew', 'Clothing:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'ContainerLootNew', 'Containers (Bags):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'KeyLootNew', 'Keys & Locks:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'MediaLootNew', 'Media (VHS, CDs):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'MementoLootNew', 'Mementos (Collectibles):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'CookwareLootNew', 'Cookware:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'MaterialLootNew', 'Materials (Crafting):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'FarmingLootNew', 'Farming Tools:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'ToolLootNew', 'Tools (General):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'OtherLootNew', 'Other Items:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
+    def create_world_settings(self, parent):
+        """Create world and environment settings"""
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind("<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        row = 0
+        
+        # Temperature
+        self.add_choice_setting(scrollable_frame, 'Temperature', 'Temperature:', row, {
+            'Very Cold': 1, 'Cold': 2, 'Normal': 3, 'Hot': 4
+        }, is_lua=True)
+        row += 1
+        
+        # Rain
+        self.add_choice_setting(scrollable_frame, 'Rain', 'Rain Amount:', row, {
+            'Very Dry': 1, 'Dry': 2, 'Normal': 3, 'Rainy': 4, 'Very Rainy': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Erosion
+        self.add_choice_setting(scrollable_frame, 'ErosionSpeed', 'Erosion Speed:', row, {
+            'Very Fast (20 Days)': 1, 'Fast (50 Days)': 2, 'Normal (100 Days)': 3,
+            'Slow (200 Days)': 4, 'Very Slow (500 Days)': 5, 'None': 6
+        }, is_lua=True)
+        row += 1
+        
+        # Locked Houses
+        self.add_choice_setting(scrollable_frame, 'LockedHouses', 'Locked Houses:', row, {
+            'None': 1, 'Very Low': 2, 'Low': 3, 'Normal': 4, 'High': 5, 'Very High': 6
+        }, is_lua=True)
+        row += 1
+        
+        # Alarm Frequency
+        self.add_choice_setting(scrollable_frame, 'Alarm', 'House Alarms:', row, {
+            'Never': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4, 'Often': 5, 'Very Often': 6
+        }, is_lua=True)
+        row += 1
+        
+        # Fire Spread
+        self.add_bool_setting(scrollable_frame, 'FireSpread', 'Fire Spreads:', row, is_lua=True)
+        row += 1
+        
+        # Max Fog Intensity
+        self.add_choice_setting(scrollable_frame, 'MaxFogIntensity', 'Max Fog Intensity:', row, {
+            'Normal': 1, 'Moderate': 2, 'Dense': 3
+        }, is_lua=True)
+        row += 1
+        
+        # Max Rain Intensity
+        self.add_choice_setting(scrollable_frame, 'MaxRainFxIntensity', 'Max Rain Intensity:', row, {
+            'Normal': 1, 'Moderate': 2, 'Heavy': 3
+        }, is_lua=True)
+        row += 1
+        
+        # Snow on Ground
+        self.add_bool_setting(scrollable_frame, 'EnableSnowOnGround', 'Snow on Ground:', row, is_lua=True)
+        row += 1
+        
+        # Survivor Houses
+        self.add_choice_setting(scrollable_frame, 'SurvivorHouseChance', 'Survivor House Chance:', row, {
+            'Never': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4, 'Often': 5, 'Very Often': 6
+        }, is_lua=True)
+        row += 1
+        
+        # Annotated Map Chance
+        self.add_choice_setting(scrollable_frame, 'AnnotatedMapChance', 'Annotated Map Chance:', row, {
+            'Never': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4, 'Often': 5, 'Always': 6
+        }, is_lua=True)
+        row += 1
+        
+        # Generator Spawning
+        self.add_choice_setting(scrollable_frame, 'GeneratorSpawning', 'Generator Spawning:', row, {
+            'Extremely Rare': 1, 'Rare': 2, 'Sometimes': 3, 'Often': 4, 'Very Often': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Generator Fuel Consumption
+        self.add_slider_setting(scrollable_frame, 'GeneratorFuelConsumption', 'Generator Fuel Usage:', row, 0, 10, 0.1, is_lua=True)
+        row += 1
+        
+        # Allow Exterior Generators
+        self.add_bool_setting(scrollable_frame, 'AllowExteriorGenerator', 'Allow Exterior Generators:', row, is_lua=True)
+        row += 1
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
+    def create_survival_settings(self, parent):
+        """Create survival and health settings"""
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind("<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        row = 0
+        
+        # Stats Decrease
+        self.add_choice_setting(scrollable_frame, 'StatsDecrease', 'Stats Decrease Rate:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Nutrition
+        self.add_bool_setting(scrollable_frame, 'Nutrition', 'Nutrition System:', row, is_lua=True)
+        row += 1
+        
+        # Food Rot Speed
+        self.add_choice_setting(scrollable_frame, 'FoodRotSpeed', 'Food Rot Speed:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Fridge Effectiveness
+        self.add_choice_setting(scrollable_frame, 'FridgeFactor', 'Fridge Effectiveness:', row, {
+            'Very Low': 1, 'Low': 2, 'Normal': 3, 'High': 4, 'Very High': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Injury Severity
+        self.add_choice_setting(scrollable_frame, 'InjurySeverity', 'Injury Severity:', row, {
+            'Low': 1, 'Normal': 2, 'High': 3
+        }, is_lua=True)
+        row += 1
+        
+        # Bone Fractures
+        self.add_bool_setting(scrollable_frame, 'BoneFracture', 'Bone Fractures:', row, is_lua=True)
+        row += 1
+        
+        # Endurance Regeneration
+        self.add_choice_setting(scrollable_frame, 'EndRegen', 'Endurance Regeneration:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Starter Kit
+        self.add_bool_setting(scrollable_frame, 'StarterKit', 'Starter Kit (Beginner Items):', row, is_lua=True)
+        row += 1
+        
+        # Character Free Points
+        self.add_number_setting(scrollable_frame, 'CharacterFreePoints', 'Character Free Points:', row, 0, 100, is_lua=True)
+        row += 1
+        
+        # Construction Bonus Points
+        self.add_number_setting(scrollable_frame, 'ConstructionBonusPoints', 'Construction Bonus Points:', row, 0, 100, is_lua=True)
+        row += 1
+        
+        # Night Darkness
+        self.add_choice_setting(scrollable_frame, 'NightDarkness', 'Night Darkness:', row, {
+            'Pitch Black': 1, 'Dark': 2, 'Normal': 3, 'Bright': 4
+        }, is_lua=True)
+        row += 1
+        
+        # Night Length
+        self.add_choice_setting(scrollable_frame, 'NightLength', 'Night Length:', row, {
+            'Always Day': 1, 'Short': 2, 'Normal': 3, 'Long': 4, 'Always Night': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Zombie Health Impact
+        self.add_choice_setting(scrollable_frame, 'ZombieHealthImpact', 'Zombie Health Impact on Player:', row, {
+            'None': 1, 'Low': 2, 'Normal': 3, 'High': 4
+        }, is_lua=True)
+        row += 1
+        
+        # Decaying Corpse Health Impact
+        self.add_choice_setting(scrollable_frame, 'DecayingCorpseHealthImpact', 'Decaying Corpse Health Impact:', row, {
+            'None': 1, 'Low': 2, 'Normal': 3, 'High': 4
+        }, is_lua=True)
+        row += 1
+        
+        # Blood Level
+        self.add_choice_setting(scrollable_frame, 'BloodLevel', 'Blood Level:', row, {
+            'None': 1, 'Low': 2, 'Normal': 3, 'High': 4, 'Ultra Gore': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Clothing Degradation
+        self.add_choice_setting(scrollable_frame, 'ClothingDegradation', 'Clothing Degradation:', row, {
+            'Disabled': 1, 'Slow': 2, 'Normal': 3, 'Fast': 4
+        }, is_lua=True)
+        row += 1
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
+    def add_slider_setting(self, parent, key, label, row, min_val, max_val, step, is_lua=False):
+        """Add a slider setting for decimal values"""
+        ttk.Label(parent, text=label).grid(row=row, column=0, sticky=tk.W, padx=5, pady=5)
+        
+        frame = ttk.Frame(parent)
+        frame.grid(row=row, column=1, sticky=tk.W, padx=5, pady=5)
+        
+        var = tk.DoubleVar(value=(min_val + max_val) / 2)
+        
+        scale = ttk.Scale(frame, from_=min_val, to=max_val, orient=tk.HORIZONTAL,
+                         variable=var, length=200)
+        scale.pack(side=tk.LEFT, padx=(0, 10))
+        
+        value_label = ttk.Label(frame, text=f"{var.get():.1f}")
+        value_label.pack(side=tk.LEFT)
+        
+        def update_label(*args):
+            value_label.config(text=f"{var.get():.1f}")
+        
+        var.trace('w', update_label)
+        
+        self.settings[key] = {'widget': scale, 'var': var, 'type': 'slider', 'is_lua': is_lua}
     
     def add_text_setting(self, parent, key, label, row, is_lua=False):
         """Add a text input setting"""
@@ -2710,6 +3178,12 @@ class SettingsEditorWindow(tk.Toplevel):
                                 widget_info['widget'].insert(0, value)
                             elif widget_info['type'] == 'bool':
                                 widget_info['var'].set(value.lower() == 'true')
+                            elif widget_info['type'] == 'slider':
+                                # Set slider value
+                                try:
+                                    widget_info['var'].set(float(value))
+                                except ValueError:
+                                    pass
                             elif widget_info['type'] == 'choice':
                                 # Find the choice that matches the value
                                 # Try as int first, then float
@@ -2796,6 +3270,9 @@ class SettingsEditorWindow(tk.Toplevel):
                             new_value = widget_info['widget'].get()
                         elif widget_info['type'] == 'bool':
                             new_value = 'true' if widget_info['var'].get() else 'false'
+                        elif widget_info['type'] == 'slider':
+                            # Get slider value, rounded to 1 decimal place
+                            new_value = f"{widget_info['var'].get():.1f}"
                         elif widget_info['type'] == 'choice':
                             selected = widget_info['var'].get()
                             # Skip if no selection or invalid selection
@@ -2991,6 +3468,25 @@ class RawFileViewer(tk.Toplevel):
         self.title("Raw Configuration Files")
         self.geometry("900x700")
         
+        # Apply theme
+        if hasattr(parent, 'current_theme'):
+            theme = parent.current_theme.get()
+            if theme == "dark":
+                self.configure(bg="#2b2b2b")
+                text_bg = "#404040"
+                text_fg = "#ffffff"
+                select_bg = "#505050"
+            else:
+                self.configure(bg="#f5f5f5")
+                text_bg = "#ffffff"
+                text_fg = "#000000"
+                select_bg = "#0078d7"
+        else:
+            self.configure(bg="#f5f5f5")
+            text_bg = "#ffffff"
+            text_fg = "#000000"
+            select_bg = "#0078d7"
+        
         notebook = ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -2998,7 +3494,11 @@ class RawFileViewer(tk.Toplevel):
             ini_frame = ttk.Frame(notebook)
             notebook.add(ini_frame, text=ini_file.name)
             
-            text = scrolledtext.ScrolledText(ini_frame, wrap=tk.WORD)
+            text = scrolledtext.ScrolledText(ini_frame, wrap=tk.WORD,
+                                            bg=text_bg, fg=text_fg,
+                                            insertbackground=text_fg,
+                                            selectbackground=select_bg,
+                                            selectforeground="#ffffff" if select_bg == "#0078d7" else "#ffffff")
             text.pack(fill=tk.BOTH, expand=True)
             
             with open(ini_file, 'r', encoding='utf-8', errors='ignore') as f:
@@ -3008,7 +3508,11 @@ class RawFileViewer(tk.Toplevel):
             lua_frame = ttk.Frame(notebook)
             notebook.add(lua_frame, text=lua_file.name)
             
-            text = scrolledtext.ScrolledText(lua_frame, wrap=tk.WORD)
+            text = scrolledtext.ScrolledText(lua_frame, wrap=tk.WORD,
+                                            bg=text_bg, fg=text_fg,
+                                            insertbackground=text_fg,
+                                            selectbackground=select_bg,
+                                            selectforeground="#ffffff" if select_bg == "#0078d7" else "#ffffff")
             text.pack(fill=tk.BOTH, expand=True)
             
             with open(lua_file, 'r', encoding='utf-8', errors='ignore') as f:
