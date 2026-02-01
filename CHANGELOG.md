@@ -2,6 +2,35 @@
 
 All notable changes to the Project Zomboid Server Admin Tool will be documented in this file.
 
+## [1.2.0] - 2026-01-31
+
+### Added
+- **70+ Server Settings**: Expanded settings editor with 7 tabs
+  - Loot Details: 19 granular loot categories with sliders
+  - World & Environment: Weather, erosion, temperature, fog, generators
+  - Survival & Health: Nutrition, injuries, character points, blood level
+- **Slider Controls**: Visual sliders for decimal values (loot abundance, etc.)
+- **Comprehensive Theme Support**: All dialogs, text areas, and canvas widgets now properly themed
+
+### Improved
+- **Dark Theme**: Completely redesigned for consistency
+  - All Canvas widgets themed
+  - All ScrolledText widgets themed
+  - All dialog windows themed
+  - Raw file viewer themed
+  - Server info, logs, and command output themed
+- **Light Theme**: Cleaner, more professional appearance
+- **Dialog Sizes**: Increased default sizes for better visibility
+  - File selection: 600x400 → 700x500
+  - Settings editor: 800x600 → 900x700
+  - Server control: 600x400 → 700x500
+
+### Fixed
+- Canvas backgrounds now match theme (no more white rectangles)
+- Text widget colors properly applied at creation
+- All popup dialogs inherit theme correctly
+- Button visibility in dialogs improved
+
 ## [1.1.0] - 2026-01-31
 
 ### Added
