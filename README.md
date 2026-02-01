@@ -5,7 +5,6 @@ A comprehensive GUI-based administration tool for Project Zomboid dedicated serv
 ![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-<<<<<<< HEAD
 ## ✨ Features
 
 ### 🎮 Player Management
@@ -34,9 +33,24 @@ A comprehensive GUI-based administration tool for Project Zomboid dedicated serv
 ### ⏰ Task Scheduler
 - Schedule recurring server announcements
 - Schedule recurring RCON commands
+- **Scheduled restart timer with countdown warnings**
+- **Persistent timers** that survive program restarts
 - Perfect for restart warnings and auto-saves
 - Enable/disable/remove scheduled tasks
 - Persistent across application restarts
+
+### 🔄 Standalone Restart Timer (`pz_restart_timer.py`)
+- Dedicated lightweight application for automatic restarts
+- Runs independently from main admin tool
+- Set interval-based repeating restarts (e.g., every 3 hours)
+- Player warnings at configurable intervals (30min, 15min, etc.)
+- Auto-save before restart
+- Persistent state - resumes after crashes/reboots
+- Dark mode support
+
+**⚠️ IMPORTANT:** Do NOT run restart timers in both programs simultaneously! Choose one:
+- Use **main tool** if you need full admin features + occasional restarts
+- Use **standalone timer** if you only need automated restarts running 24/7
 
 ### 🎛️ Server Control
 - Start/Stop/Restart server with one click
@@ -62,31 +76,6 @@ A comprehensive GUI-based administration tool for Project Zomboid dedicated serv
 - Send server-wide messages
 - Save server state
 - Real-time command output logging
-=======
-## Features
-
-### 🎮 Player Management
-- View online players in real-time
-- Kick/ban players
-- Grant and remove admin privileges
-- Toggle god mode
-- Teleport players
-
-### 🖥️ Server Control
-- Send server-wide messages
-- Execute custom RCON commands
-- Save server state
-- Real-time command output
-
-### 📊 Server Monitoring
-- View installed mods with Workshop IDs
-- Identify orphaned Workshop items
-- Read server logs
-- View server configuration
-- Auto-refresh player list (30s intervals)
-
-### 🔧 Advanced Features
->>>>>>> b2191b288d654d403a8ed1dea4c270cea41a5b61
 - Persistent RCON connection
 - Config file support for saved settings
 - Show/hide password option
@@ -114,7 +103,6 @@ All standard library - no pip packages required!
 
 ## Installation
 
-<<<<<<< HEAD
 ### Windows Users
 
 **Option 1: Standalone Executable (No Python Required)**
@@ -133,8 +121,6 @@ python pz_admin_tool.py
 
 ### Linux/Mac Users
 
-=======
->>>>>>> b2191b288d654d403a8ed1dea4c270cea41a5b61
 ### 1. Download
 
 ```bash
@@ -142,22 +128,15 @@ git clone https://github.com/yourusername/pz-admin-tool.git
 cd pz-admin-tool
 ```
 
-<<<<<<< HEAD
 ### 2. Install Python TkInter (Linux only, if needed)
-=======
-### 2. Install Python TkInter (if needed)
->>>>>>> b2191b288d654d403a8ed1dea4c270cea41a5b61
 
 ```bash
 sudo apt-get update
 sudo apt-get install python3-tk
 ```
 
-<<<<<<< HEAD
 Mac and Windows include tkinter by default.
 
-=======
->>>>>>> b2191b288d654d403a8ed1dea4c270cea41a5b61
 ### 3. Enable RCON on Your Server
 
 Edit your server config file (usually `~/Zomboid/Server/servertest.ini`):
@@ -209,11 +188,7 @@ The tool saves your connection settings to `pz_admin_config.json`:
 {
     "host": "127.0.0.1",
     "port": "16261",
-<<<<<<< HEAD
     "server_path": "/home/zomboid/Zomboid"
-=======
-    "server_path": "/home/username/Zomboid"
->>>>>>> b2191b288d654d403a8ed1dea4c270cea41a5b61
 }
 ```
 
@@ -299,15 +274,9 @@ sudo netstat -tulpn | grep 16261
 **Solutions:**
 1. Click **Auto-Detect** button
 2. Manually set path to server **data** directory:
-<<<<<<< HEAD
    - Usually: `/home/zomboid/Zomboid/`
    - NOT the steamcmd install directory
 3. Check config file exists at `ServerPath/Server/servertest.ini`
-=======
-   - Usually: `/home/username/Zomboid/`
-   - NOT the steamcmd install directory
-3. Check config file exists at `ServerPath/Server/server.ini`
->>>>>>> b2191b288d654d403a8ed1dea4c270cea41a5b61
 
 ## Architecture
 

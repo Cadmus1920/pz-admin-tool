@@ -203,8 +203,9 @@ class PZServerAdmin(tk.Tk):
         # Create menu bar
         self.create_menu()
         
-        # Apply theme
+        # Apply theme and font
         self.apply_theme()
+        self.apply_font_size()
         
         self.create_widgets()
         self.load_config()
@@ -266,6 +267,12 @@ class PZServerAdmin(tk.Tk):
             border = "#1a1a1a"        # Borders (darker)
             select_bg = "#505050"     # Selection background
             
+            # Accent colors
+            accent_blue = "#3a7ebf"
+            accent_green = "#4a9d5f"
+            accent_red = "#c94c4c"
+            accent_orange = "#d97634"
+            
             # Use 'clam' theme as base - it handles colors better
             try:
                 style.theme_use('clam')
@@ -278,6 +285,27 @@ class PZServerAdmin(tk.Tk):
                           darkcolor=bg_main, lightcolor=bg_widget,
                           troughcolor=bg_widget, selectbackground=select_bg,
                           selectforeground=fg_bright)
+            
+            # Accent button styles
+            style.configure("Accent.TButton", background=accent_blue, foreground=fg_bright,
+                          bordercolor=accent_blue, font=('TkDefaultFont', 9, 'bold'))
+            style.map("Accent.TButton",
+                     background=[('active', '#4a8fcf'), ('pressed', '#2a6eaf')])
+            
+            style.configure("Success.TButton", background=accent_green, foreground=fg_bright,
+                          bordercolor=accent_green, font=('TkDefaultFont', 9, 'bold'))
+            style.map("Success.TButton",
+                     background=[('active', '#5aad6f'), ('pressed', '#3a8d4f')])
+            
+            style.configure("Danger.TButton", background=accent_red, foreground=fg_bright,
+                          bordercolor=accent_red, font=('TkDefaultFont', 9, 'bold'))
+            style.map("Danger.TButton",
+                     background=[('active', '#d95c5c'), ('pressed', '#b93c3c')])
+            
+            style.configure("Warning.TButton", background=accent_orange, foreground=fg_bright,
+                          bordercolor=accent_orange, font=('TkDefaultFont', 9, 'bold'))
+            style.map("Warning.TButton",
+                     background=[('active', '#e98644'), ('pressed', '#c96624')])
             
             style.configure("TFrame", background=bg_main)
             style.configure("TLabel", background=bg_main, foreground=fg_main)
@@ -381,6 +409,12 @@ class PZServerAdmin(tk.Tk):
             bg_widget = "#ffffff"
             fg_main = "#000000"
             border = "#d0d0d0"
+            
+            # Accent colors for light theme
+            accent_blue = "#0078d7"
+            accent_green = "#107c10"
+            accent_red = "#d13438"
+            accent_orange = "#ff8c00"
             select_bg = "#0078d7"
             select_fg = "#ffffff"
             
@@ -408,11 +442,33 @@ class PZServerAdmin(tk.Tk):
             style.configure("TCheckbutton", background=bg_main, foreground=fg_main)
             style.configure("TRadiobutton", background=bg_main, foreground=fg_main)
             
+            # Accent button styles
+            style.configure("Accent.TButton", background=accent_blue, foreground="#ffffff",
+                          font=('TkDefaultFont', 9, 'bold'))
+            style.map("Accent.TButton",
+                     background=[('active', '#1084e7'), ('pressed', '#0068c7')])
+            
+            style.configure("Success.TButton", background=accent_green, foreground="#ffffff",
+                          font=('TkDefaultFont', 9, 'bold'))
+            style.map("Success.TButton",
+                     background=[('active', '#208c20'), ('pressed', '#006c00')])
+            
+            style.configure("Danger.TButton", background=accent_red, foreground="#ffffff",
+                          font=('TkDefaultFont', 9, 'bold'))
+            style.map("Danger.TButton",
+                     background=[('active', '#e14448'), ('pressed', '#c12428')])
+            
+            style.configure("Warning.TButton", background=accent_orange, foreground="#ffffff",
+                          font=('TkDefaultFont', 9, 'bold'))
+            style.map("Warning.TButton",
+                     background=[('active', '#ff9c10'), ('pressed', '#ef7c00')])
+            
             style.configure("TNotebook", background=bg_main, bordercolor=border)
             style.configure("TNotebook.Tab", background="#e0e0e0", foreground=fg_main,
                           bordercolor=border)
             style.map("TNotebook.Tab",
                      background=[("selected", bg_main), ('active', '#f0f0f0')],
+                     foreground=[("selected", fg_main), ('active', fg_main)],
                      expand=[("selected", [1, 1, 1, 0])])
             
             # Entry and Spinbox
@@ -465,6 +521,10 @@ class PZServerAdmin(tk.Tk):
         
         # Save preference
         self.save_appearance_settings()
+        
+        # Update banner if it exists
+        if hasattr(self, 'banner'):
+            self.update_banner_colors()
     
     def apply_font_size(self):
         """Apply the selected font size"""
@@ -476,6 +536,9 @@ class PZServerAdmin(tk.Tk):
         
         text_font = font.nametofont("TkTextFont")
         text_font.configure(size=size)
+        
+        # Force update all widgets
+        self.update_idletasks()
         
         # Save preference
         self.save_appearance_settings()
@@ -553,46 +616,71 @@ Created with ❤️ for the PZ community
                 'selectbackground': "#0078d7",
                 'selectforeground': "#ffffff"
             }
+    
+    def update_banner_colors(self):
+        """Update banner colors based on theme"""
+        theme = self.current_theme.get()
+        if theme == "dark":
+            self.banner.configure(bg="#1e1e1e")
+            self.title_label.configure(bg="#1e1e1e", fg="#ffffff")
+        else:
+            self.banner.configure(bg="#0078d7")
+            self.title_label.configure(bg="#0078d7", fg="#ffffff")
         
     def create_widgets(self):
         """Create the GUI widgets"""
         
-        # Connection Frame
-        conn_frame = ttk.LabelFrame(self, text="Server Connection", padding=10)
-        conn_frame.pack(fill=tk.X, padx=10, pady=5)
+        # Welcome/Title Banner - theme aware
+        self.banner = tk.Frame(self, height=60)
+        self.banner.pack(fill=tk.X, padx=0, pady=0)
         
-        ttk.Label(conn_frame, text="Host:").grid(row=0, column=0, sticky=tk.W)
+        self.title_label = tk.Label(self.banner, 
+                              text="🎮 Project Zomboid Server Admin",
+                              font=('TkDefaultFont', 16, 'bold'))
+        self.title_label.pack(pady=15)
+        
+        # Update banner colors based on theme
+        self.update_banner_colors()
+        
+        # Connection Frame - with emoji and accent
+        conn_frame = ttk.LabelFrame(self, text="🔌 Server Connection", padding=15)
+        conn_frame.pack(fill=tk.X, padx=15, pady=10)
+        
+        ttk.Label(conn_frame, text="Host:").grid(row=0, column=0, sticky=tk.W, pady=5)
         self.host_entry = ttk.Entry(conn_frame, width=20)
-        self.host_entry.grid(row=0, column=1, padx=5)
+        self.host_entry.grid(row=0, column=1, padx=5, pady=5)
         self.host_entry.insert(0, "localhost")
         
-        ttk.Label(conn_frame, text="Port:").grid(row=0, column=2, sticky=tk.W, padx=(10, 0))
+        ttk.Label(conn_frame, text="Port:").grid(row=0, column=2, sticky=tk.W, padx=(15, 0), pady=5)
         self.port_entry = ttk.Entry(conn_frame, width=10)
-        self.port_entry.grid(row=0, column=3, padx=5)
+        self.port_entry.grid(row=0, column=3, padx=5, pady=5)
         self.port_entry.insert(0, "16261")
         
-        ttk.Label(conn_frame, text="Password:").grid(row=0, column=4, sticky=tk.W, padx=(10, 0))
+        ttk.Label(conn_frame, text="Password:").grid(row=0, column=4, sticky=tk.W, padx=(15, 0), pady=5)
         self.password_entry = ttk.Entry(conn_frame, width=20, show="*")
-        self.password_entry.grid(row=0, column=5, padx=5)
+        self.password_entry.grid(row=0, column=5, padx=5, pady=5)
         
         # Show password checkbox
         self.show_password_var = tk.BooleanVar()
-        ttk.Checkbutton(conn_frame, text="Show", variable=self.show_password_var,
-                       command=self.toggle_password_visibility).grid(row=0, column=6, padx=(0, 5))
+        ttk.Checkbutton(conn_frame, text="👁️ Show", variable=self.show_password_var,
+                       command=self.toggle_password_visibility).grid(row=0, column=6, padx=(0, 10), pady=5)
         
-        self.connect_btn = ttk.Button(conn_frame, text="Connect", command=self.connect_to_server)
-        self.connect_btn.grid(row=0, column=7, padx=10)
+        self.connect_btn = ttk.Button(conn_frame, text="🔗 Connect", command=self.connect_to_server,
+                                     style='Accent.TButton')
+        self.connect_btn.grid(row=0, column=7, padx=10, pady=5)
         
-        self.status_label = ttk.Label(conn_frame, text="Status: Disconnected", foreground="red")
-        self.status_label.grid(row=0, column=8, padx=10)
+        self.status_label = ttk.Label(conn_frame, text="⭕ Disconnected", foreground="red", 
+                                      font=('TkDefaultFont', 9, 'bold'))
+        self.status_label.grid(row=0, column=8, padx=10, pady=5)
         
         # Restart timer indicator (initially hidden)
-        self.restart_indicator = ttk.Label(conn_frame, text="", foreground="orange", font=('TkDefaultFont', 9, 'bold'))
-        self.restart_indicator.grid(row=0, column=9, padx=10)
+        self.restart_indicator = ttk.Label(conn_frame, text="", foreground="orange", 
+                                          font=('TkDefaultFont', 9, 'bold'))
+        self.restart_indicator.grid(row=0, column=9, padx=10, pady=5)
         
         # Server Path Frame
-        path_frame = ttk.LabelFrame(self, text="Server Files (Optional - for Mods/Logs viewing)", padding=10)
-        path_frame.pack(fill=tk.X, padx=10, pady=5)
+        path_frame = ttk.LabelFrame(self, text="📁 Server Files (Optional - for Mods/Logs viewing)", padding=15)
+        path_frame.pack(fill=tk.X, padx=15, pady=10)
         
         ttk.Label(path_frame, text="Server Path:").grid(row=0, column=0, sticky=tk.W)
         self.path_entry = ttk.Entry(path_frame, textvariable=self.server_path, width=50)
@@ -610,37 +698,37 @@ Created with ❤️ for the PZ community
         
         # Players Tab
         self.players_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.players_frame, text="Players")
+        self.notebook.add(self.players_frame, text="👥 Players")
         self.create_players_tab()
         
         # Server Info Tab
         self.info_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.info_frame, text="Server Info")
+        self.notebook.add(self.info_frame, text="ℹ️  Server Info")
         self.create_info_tab()
         
         # Commands Tab
         self.commands_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.commands_frame, text="Commands")
+        self.notebook.add(self.commands_frame, text="⌨️  Commands")
         self.create_commands_tab()
         
         # Mods Tab
         self.mods_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.mods_frame, text="Mods")
+        self.notebook.add(self.mods_frame, text="🧩 Mods")
         self.create_mods_tab()
         
         # Logs Tab
         self.logs_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.logs_frame, text="Logs")
+        self.notebook.add(self.logs_frame, text="📜 Logs")
         self.create_logs_tab()
         
         # Ban List Tab
         self.banlist_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.banlist_frame, text="Ban List")
+        self.notebook.add(self.banlist_frame, text="🚫 Ban List")
         self.create_banlist_tab()
         
         # Scheduler Tab
         self.scheduler_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.scheduler_frame, text="Scheduler")
+        self.notebook.add(self.scheduler_frame, text="⏰ Scheduler")
         self.create_scheduler_tab()
         
         # Bottom buttons
@@ -681,27 +769,31 @@ Created with ❤️ for the PZ community
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
         # Player actions
-        actions_frame = ttk.LabelFrame(self.players_frame, text="Player Actions", padding=10)
-        actions_frame.pack(fill=tk.X, padx=5, pady=5)
+        actions_frame = ttk.LabelFrame(self.players_frame, text="👤 Player Actions", padding=15)
+        actions_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Label(actions_frame, text="Username:").grid(row=0, column=0, sticky=tk.W)
+        ttk.Label(actions_frame, text="Username:").grid(row=0, column=0, sticky=tk.W, pady=5)
         self.player_username_entry = ttk.Entry(actions_frame, width=20)
-        self.player_username_entry.grid(row=0, column=1, padx=5)
+        self.player_username_entry.grid(row=0, column=1, padx=5, pady=5)
         
         # Row 0: Basic actions
-        ttk.Button(actions_frame, text="Kick", command=lambda: self.player_action('kick')).grid(row=0, column=2, padx=5)
-        ttk.Button(actions_frame, text="Ban", command=lambda: self.player_action('ban')).grid(row=0, column=3, padx=5)
-        ttk.Button(actions_frame, text="Teleport", command=lambda: self.player_action('teleport')).grid(row=0, column=4, padx=5)
+        ttk.Button(actions_frame, text="⚠️ Kick", command=lambda: self.player_action('kick'),
+                  style='Warning.TButton').grid(row=0, column=2, padx=5, pady=5)
+        ttk.Button(actions_frame, text="🚫 Ban", command=lambda: self.player_action('ban'),
+                  style='Danger.TButton').grid(row=0, column=3, padx=5, pady=5)
+        ttk.Button(actions_frame, text="📍 Teleport", command=lambda: self.player_action('teleport'),
+                  style='Accent.TButton').grid(row=0, column=4, padx=5, pady=5)
         
         # Row 1: Admin controls
-        ttk.Button(actions_frame, text="Grant Admin", command=lambda: self.player_action('admin'), 
-                  ).grid(row=1, column=2, padx=5, pady=5)
-        ttk.Button(actions_frame, text="Remove Admin", command=lambda: self.player_action('removeadmin'),
-                  ).grid(row=1, column=3, padx=5, pady=5)
-        ttk.Button(actions_frame, text="Toggle God Mode", command=lambda: self.player_action('godmode'),
-                  ).grid(row=1, column=4, padx=5, pady=5)
+        ttk.Button(actions_frame, text="⭐ Grant Admin", command=lambda: self.player_action('admin'),
+                  style='Success.TButton').grid(row=1, column=2, padx=5, pady=5)
+        ttk.Button(actions_frame, text="❌ Remove Admin", command=lambda: self.player_action('removeadmin'),
+                  style='Danger.TButton').grid(row=1, column=3, padx=5, pady=5)
+        ttk.Button(actions_frame, text="✨ God Mode", command=lambda: self.player_action('godmode'),
+                  style='Accent.TButton').grid(row=1, column=4, padx=5, pady=5)
         
-        ttk.Button(actions_frame, text="Refresh Players", command=self.refresh_players).grid(row=2, column=0, columnspan=6, pady=10)
+        ttk.Button(actions_frame, text="🔄 Refresh Players", command=self.refresh_players,
+                  style='Accent.TButton').grid(row=2, column=0, columnspan=6, pady=10)
         
     def create_info_tab(self):
         """Create the server info tab"""
@@ -713,38 +805,47 @@ Created with ❤️ for the PZ community
         self.info_text.pack(fill=tk.BOTH, expand=True)
         
         # Server Control buttons
-        control_frame = ttk.LabelFrame(self.info_frame, text="Server Control", padding=5)
-        control_frame.pack(fill=tk.X, padx=5, pady=5)
+        control_frame = ttk.LabelFrame(self.info_frame, text="🎮 Server Control", padding=10)
+        control_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Button(control_frame, text="Start Server", command=self.start_server).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Stop Server", command=self.stop_server).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Restart Server", command=self.restart_server).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Scheduled Restart", command=self.open_restart_timer).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Check Status", command=self.check_server_status).pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Configure Commands", command=self.configure_server_control).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="▶️  Start Server", command=self.start_server, 
+                  style='Success.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="⏹️  Stop Server", command=self.stop_server,
+                  style='Danger.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="🔄 Restart Server", command=self.restart_server,
+                  style='Warning.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="⏰ Scheduled Restart", command=self.open_restart_timer,
+                  style='Accent.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="📊 Check Status", command=self.check_server_status).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="⚙️  Configure", command=self.configure_server_control).pack(side=tk.LEFT, padx=5)
         
         # Info buttons
         btn_frame = ttk.Frame(self.info_frame)
-        btn_frame.pack(fill=tk.X, padx=5, pady=5)
+        btn_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        ttk.Button(btn_frame, text="Get Server Info", command=self.get_server_info).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Get Server Stats", command=self.get_server_stats).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Edit Server Settings", command=self.open_settings_editor).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="ℹ️  Server Info", command=self.get_server_info,
+                  style='Accent.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="📈 Server Stats", command=self.get_server_stats,
+                  style='Accent.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="⚙️  Edit Settings", command=self.open_settings_editor,
+                  style='Accent.TButton').pack(side=tk.LEFT, padx=5)
         
     def create_commands_tab(self):
         """Create the commands tab"""
         # Quick commands
-        quick_frame = ttk.LabelFrame(self.commands_frame, text="Quick Commands", padding=10)
-        quick_frame.pack(fill=tk.X, padx=5, pady=5)
+        quick_frame = ttk.LabelFrame(self.commands_frame, text="⚡ Quick Commands", padding=15)
+        quick_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Button(quick_frame, text="Save Server", command=lambda: self.quick_command('save')).grid(row=0, column=0, padx=5, pady=5)
-        ttk.Button(quick_frame, text="Help", command=lambda: self.quick_command('help')).grid(row=0, column=1, padx=5, pady=5)
-        ttk.Button(quick_frame, text="Show Players", command=lambda: self.quick_command('players')).grid(row=0, column=2, padx=5, pady=5)
-        ttk.Button(quick_frame, text="Server Message", command=self.send_server_message).grid(row=0, column=3, padx=5, pady=5)
+        ttk.Button(quick_frame, text="💾 Save Server", command=lambda: self.quick_command('save'),
+                  style='Success.TButton').grid(row=0, column=0, padx=5, pady=5)
+        ttk.Button(quick_frame, text="❓ Help", command=lambda: self.quick_command('help')).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Button(quick_frame, text="👥 Show Players", command=lambda: self.quick_command('players')).grid(row=0, column=2, padx=5, pady=5)
+        ttk.Button(quick_frame, text="📢 Server Message", command=self.send_server_message,
+                  style='Accent.TButton').grid(row=0, column=3, padx=5, pady=5)
         
         # Custom command
-        custom_frame = ttk.LabelFrame(self.commands_frame, text="Custom Command", padding=10)
-        custom_frame.pack(fill=tk.X, padx=5, pady=5)
+        custom_frame = ttk.LabelFrame(self.commands_frame, text="⌨️  Custom Command", padding=15)
+        custom_frame.pack(fill=tk.X, padx=10, pady=10)
         
         ttk.Label(custom_frame, text="Command:").pack(side=tk.LEFT, padx=5)
         self.command_entry = ttk.Entry(custom_frame, width=40)
@@ -966,7 +1067,7 @@ Created with ❤️ for the PZ community
             self.rcon = RCONClient(host, port, password)
             self.rcon.connect()
             
-            self.status_label.config(text="Status: Connected", foreground="green")
+            self.status_label.config(text="✅ Connected", foreground="green")
             self.connect_btn.config(text="Disconnect")
             messagebox.showinfo("Success", "Connected to server successfully!\n\nConnection will remain open for commands.")
             
@@ -2864,6 +2965,41 @@ class SettingsEditorWindow(tk.Toplevel):
     
     def create_ui(self):
         """Create the settings editor UI"""
+        # Preset selector at top
+        preset_frame = ttk.LabelFrame(self, text="🎮 Load Preset", padding=10)
+        preset_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ttk.Label(preset_frame, text="Quick Preset:").pack(side=tk.LEFT, padx=5)
+        
+        # Load custom presets from file
+        self.custom_presets = self.load_custom_presets()
+        
+        # Combine built-in and custom presets
+        built_in_presets = ['Apocalypse', 'Survivor', 'Builder', 'Beginner', 'First Week', 
+                           'Six Months Later', 'Survival']
+        all_presets = built_in_presets + ['---'] + list(self.custom_presets.keys()) + ['Custom (Current)']
+        
+        self.preset_var = tk.StringVar()
+        preset_combo = ttk.Combobox(preset_frame, textvariable=self.preset_var, 
+                                    values=all_presets,
+                                    state='readonly', width=30)
+        preset_combo.pack(side=tk.LEFT, padx=5)
+        preset_combo.set('Custom (Current)')
+        
+        ttk.Button(preset_frame, text="👁️ Preview", command=self.preview_preset).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(preset_frame, text="📥 Apply Preset", command=self.apply_preset,
+                  style='Accent.TButton').pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(preset_frame, text="💾 Save as Preset", command=self.save_custom_preset,
+                  style='Success.TButton').pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(preset_frame, text="🗑️ Delete", command=self.delete_custom_preset,
+                  style='Danger.TButton').pack(side=tk.LEFT, padx=5)
+        
+        ttk.Label(preset_frame, text="⚠️ Apply will overwrite current settings!", 
+                 foreground="orange").pack(side=tk.LEFT, padx=10)
+        
         # Notebook for categories
         notebook = ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -2907,6 +3043,11 @@ class SettingsEditorWindow(tk.Toplevel):
         survival_frame = ttk.Frame(notebook)
         notebook.add(survival_frame, text="Survival & Health")
         self.create_survival_settings(survival_frame)
+        
+        # Combat & Meta
+        combat_frame = ttk.Frame(notebook)
+        notebook.add(combat_frame, text="Combat & Meta")
+        self.create_combat_settings(combat_frame)
         
         # Buttons at bottom
         btn_frame = ttk.Frame(self)
@@ -3102,19 +3243,22 @@ class SettingsEditorWindow(tk.Toplevel):
         
         # Zombie Speed
         self.add_choice_setting(scrollable_frame, 'Speed', 'Zombie Speed:', row, {
-            'Sprinters': 1, 'Fast Shamblers': 2, 'Shamblers': 3, 'Random': 4
+            'Sprinters': 1, 'Fast Shamblers': 2, 'Shamblers': 3, 'Random': 4, 
+            'Random (Shamblers-Fast Shamblers)': 5
         }, is_lua=True)
         row += 1
         
         # Zombie Strength
         self.add_choice_setting(scrollable_frame, 'Strength', 'Zombie Strength:', row, {
-            'Superhuman': 1, 'Normal': 2, 'Weak': 3, 'Random': 4
+            'Superhuman': 1, 'Normal': 2, 'Weak': 3, 'Random': 4,
+            'Random (Weak-Normal)': 5, 'Random (Normal-Superhuman)': 6
         }, is_lua=True)
         row += 1
         
         # Zombie Toughness
         self.add_choice_setting(scrollable_frame, 'Toughness', 'Zombie Toughness:', row, {
-            'Tough': 1, 'Normal': 2, 'Fragile': 3, 'Random': 4
+            'Tough': 1, 'Normal': 2, 'Fragile': 3, 'Random': 4,
+            'Random (Fragile-Normal)': 5, 'Random (Normal-Tough)': 6
         }, is_lua=True)
         row += 1
         
@@ -3651,6 +3795,636 @@ class SettingsEditorWindow(tk.Toplevel):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
     
+    def create_combat_settings(self, parent):
+        """Create combat and meta game settings controls"""
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        row = 0
+        
+        ttk.Label(scrollable_frame, text="Combat Settings", 
+                 font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Melee Weapon Condition Lower Chance
+        self.add_slider_setting(scrollable_frame, 'MeleeWeaponConditionLowerChance', 'Melee Weapon Degradation:', row, 0, 50, 1, is_lua=True)
+        row += 1
+        
+        # Melee Weapon Damage
+        self.add_slider_setting(scrollable_frame, 'MeleeWeaponDamage', 'Melee Weapon Damage:', row, 0, 10, 0.1, is_lua=True)
+        row += 1
+        
+        # Firearm Damage
+        self.add_slider_setting(scrollable_frame, 'FirearmDamage', 'Firearm Damage:', row, 0, 10, 0.1, is_lua=True)
+        row += 1
+        
+        # Base Firearm Recoil
+        self.add_slider_setting(scrollable_frame, 'BaseFirearmRecoil', 'Firearm Recoil:', row, 0, 10, 0.1, is_lua=True)
+        row += 1
+        
+        # Recoil Delay
+        self.add_slider_setting(scrollable_frame, 'RecoilDelay', 'Recoil Recovery Delay:', row, 0, 50, 1, is_lua=True)
+        row += 1
+        
+        # Aim Time
+        self.add_slider_setting(scrollable_frame, 'AimTime', 'Aiming Time Modifier:', row, 0, 10, 0.1, is_lua=True)
+        row += 1
+        
+        # Multi-Hit Zombies
+        self.add_bool_setting(scrollable_frame, 'MultiHitZombies', 'Multi-Hit Zombies:', row, is_lua=True)
+        row += 1
+        
+        # Rear Vulnerability
+        self.add_choice_setting(scrollable_frame, 'RearVulnerability', 'Rear Vulnerability:', row, {
+            'Low': 1, 'Medium': 2, 'High': 3
+        }, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="Meta / Respawn Settings", 
+                 font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Zombies Hours
+        self.add_slider_setting(scrollable_frame, 'ZombiesHours', 'Hours Before Zombie Respawn:', row, 0, 1000, 10, is_lua=True)
+        row += 1
+        
+        # Zombies Respawn Percent
+        self.add_slider_setting(scrollable_frame, 'ZombiesRespawnPercent', 'Zombie Respawn %:', row, 0, 100, 1, is_lua=True)
+        row += 1
+        
+        # Respawn Unseen Hours
+        self.add_slider_setting(scrollable_frame, 'RespawnUnseenHours', 'Hours Unseen Before Respawn:', row, 0, 100, 1, is_lua=True)
+        row += 1
+        
+        # Helicopter
+        self.add_choice_setting(scrollable_frame, 'Helicopter', 'Helicopter Event:', row, {
+            'Once': 1, 'Sometimes': 2, 'Often': 3, 'Never': 4
+        }, is_lua=True)
+        row += 1
+        
+        # Meta Event
+        self.add_choice_setting(scrollable_frame, 'MetaEvent', 'Meta Events:', row, {
+            'Sometimes': 1, 'Often': 2, 'Never': 3
+        }, is_lua=True)
+        row += 1
+        
+        # Sleeping Event
+        self.add_bool_setting(scrollable_frame, 'SleepingEvent', 'Events While Sleeping:', row, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="World Spawn Settings", 
+                 font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Zombie Lore
+        self.add_choice_setting(scrollable_frame, 'ZombieLore', 'Zombie Lore (Affects Sandbox):', row, {
+            'Sprinters': 1, 'Fast Shamblers': 2, 'Shamblers': 3, 'Random': 4
+        }, is_lua=True)
+        row += 1
+        
+        # Proper Zombies
+        self.add_slider_setting(scrollable_frame, 'ProperZombies', 'Proper Zombie Count:', row, 0, 5000, 50, is_lua=True)
+        row += 1
+        
+        # RallyGroup Size
+        self.add_slider_setting(scrollable_frame, 'RallyGroupSize', 'Rally Group Size:', row, 0, 1000, 10, is_lua=True)
+        row += 1
+        
+        # Rally Travel Distance
+        self.add_slider_setting(scrollable_frame, 'RallyTravelDistance', 'Rally Travel Distance:', row, 0, 100, 1, is_lua=True)
+        row += 1
+        
+        # Rally Group Separation
+        self.add_slider_setting(scrollable_frame, 'RallyGroupSeparation', 'Rally Group Separation:', row, 0, 50, 1, is_lua=True)
+        row += 1
+        
+        # Rally Group Radius
+        self.add_slider_setting(scrollable_frame, 'RallyGroupRadius', 'Rally Group Radius:', row, 0, 100, 1, is_lua=True)
+        row += 1
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
+    def load_custom_presets(self):
+        """Load custom presets from file"""
+        try:
+            preset_file = Path.home() / '.pz_admin_tool_presets.json'
+            if preset_file.exists():
+                with open(preset_file, 'r') as f:
+                    return json.load(f)
+        except (IOError, OSError, json.JSONDecodeError):
+            pass
+        return {}
+    
+    def save_custom_presets_to_file(self):
+        """Save custom presets to file"""
+        try:
+            preset_file = Path.home() / '.pz_admin_tool_presets.json'
+            with open(preset_file, 'w') as f:
+                json.dump(self.custom_presets, f, indent=2)
+        except (IOError, OSError) as e:
+            messagebox.showerror("Error", f"Failed to save presets:\n{e}")
+    
+    def save_custom_preset(self):
+        """Save current settings as a custom preset"""
+        # Ask for preset name
+        dialog = tk.Toplevel(self)
+        dialog.title("Save Custom Preset")
+        dialog.geometry("400x150")
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        if hasattr(self.parent, 'current_theme'):
+            theme = self.parent.current_theme.get()
+            if theme == "dark":
+                dialog.configure(bg="#2b2b2b")
+            else:
+                dialog.configure(bg="#f5f5f5")
+        
+        ttk.Label(dialog, text="Enter a name for this preset:").pack(pady=10)
+        
+        name_var = tk.StringVar()
+        name_entry = ttk.Entry(dialog, textvariable=name_var, width=40)
+        name_entry.pack(pady=5)
+        name_entry.focus()
+        
+        def save_it():
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showwarning("No Name", "Please enter a preset name", parent=dialog)
+                return
+            
+            # Check if name conflicts with built-in
+            built_in = ['Apocalypse', 'Survivor', 'Builder', 'Beginner', 'First Week', 
+                       'Six Months Later', 'Survival', 'Custom (Current)', '---']
+            if name in built_in:
+                messagebox.showerror("Invalid Name", 
+                                    "This name is reserved for built-in presets.\n"
+                                    "Please choose a different name.", parent=dialog)
+                return
+            
+            # Check if overwriting
+            if name in self.custom_presets:
+                if not messagebox.askyesno("Overwrite?", 
+                                          f"Preset '{name}' already exists.\n\n"
+                                          f"Overwrite it?", parent=dialog):
+                    return
+            
+            # Collect current settings
+            preset_data = {}
+            for key, widget_info in self.settings.items():
+                if widget_info['is_lua']:  # Only save sandbox vars
+                    if widget_info['type'] == 'choice':
+                        choice_name = widget_info['var'].get()
+                        if choice_name and choice_name in widget_info['choices']:
+                            preset_data[key] = widget_info['choices'][choice_name]
+                    elif widget_info['type'] == 'bool':
+                        preset_data[key] = widget_info['var'].get()
+                    elif widget_info['type'] == 'number':
+                        try:
+                            preset_data[key] = int(widget_info['widget'].get())
+                        except ValueError:
+                            pass
+                    elif widget_info['type'] == 'slider':
+                        preset_data[key] = widget_info['var'].get()
+            
+            # Save to custom presets
+            self.custom_presets[name] = preset_data
+            self.save_custom_presets_to_file()
+            
+            # Update dropdown
+            self.refresh_preset_dropdown()
+            
+            dialog.destroy()
+            messagebox.showinfo("Saved", f"Preset '{name}' has been saved!", parent=self)
+        
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(pady=10)
+        
+        ttk.Button(btn_frame, text="💾 Save", command=save_it, 
+                  style='Success.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
+        
+        name_entry.bind('<Return>', lambda e: save_it())
+    
+    def delete_custom_preset(self):
+        """Delete a custom preset"""
+        preset = self.preset_var.get()
+        
+        # Check if it's a custom preset
+        if preset not in self.custom_presets:
+            messagebox.showinfo("Can't Delete", 
+                              "Select a custom preset to delete.\n\n"
+                              "Built-in presets cannot be deleted.", parent=self)
+            return
+        
+        if messagebox.askyesno("Delete Preset", 
+                              f"Delete preset '{preset}'?\n\n"
+                              f"This cannot be undone.", parent=self):
+            del self.custom_presets[preset]
+            self.save_custom_presets_to_file()
+            self.refresh_preset_dropdown()
+            self.preset_var.set('Custom (Current)')
+            messagebox.showinfo("Deleted", f"Preset '{preset}' has been deleted.", parent=self)
+    
+    def refresh_preset_dropdown(self):
+        """Refresh the preset dropdown with current custom presets"""
+        built_in_presets = ['Apocalypse', 'Survivor', 'Builder', 'Beginner', 'First Week', 
+                           'Six Months Later', 'Survival']
+        all_presets = built_in_presets + ['---'] + list(self.custom_presets.keys()) + ['Custom (Current)']
+        
+        # Find the combobox and update it
+        for widget in self.winfo_children():
+            if isinstance(widget, ttk.LabelFrame):
+                for child in widget.winfo_children():
+                    if isinstance(child, ttk.Combobox):
+                        child['values'] = all_presets
+                        return
+    
+    def get_preset_data(self):
+        """Get all preset configurations"""
+        return {
+            'Apocalypse': {
+                # Zombies
+                'Zombies': 4,  # Normal
+                'Distribution': 1,  # Urban Focused
+                'DayLength': 3,  # 1 Hour
+                'StartMonth': 7,  # July
+                'StartDay': 9,
+                'StartYear': 1,  # 1993
+                'WaterShut': 2,  # 0-30 Days
+                'ElecShut': 2,  # 0-30 Days
+                'TimeSinceApo': 1,  # 0-1 Month
+                'Temperature': 3,  # Normal
+                'Rain': 3,  # Normal
+                'ErosionSpeed': 3,  # Normal (100 Days)
+                'XpMultiplier': 1.0,
+                'ZombieRespawn': 4,  # None
+                'ZombieLore': 3,  # Shamblers
+                'Speed': 2,  # Fast Shamblers
+                'Strength': 2,  # Normal
+                'Toughness': 2,  # Normal
+                'Transmission': 1,  # Blood + Saliva
+                'Mortality': 5,  # 2-3 Days
+                'Reanimate': 3,  # 0-1 Minutes
+                'Cognition': 3,  # Basic Navigation
+                'Memory': 2,  # Normal
+                'Sight': 2,  # Normal
+                'Hearing': 2,  # Normal
+                'ThumpNoChasing': False,
+                'ThumpOnConstruction': True,
+                'ActiveOnly': 1,  # Both
+                'TriggerHouseAlarm': False,
+                'ZombiesDragDown': True,
+                'ZombiesFenceLunge': True,
+                'AllowExteriorGenerator': True,
+                'MaxFogIntensity': 3,  # Normal
+                'MaxRainFxIntensity': 3,  # Normal
+                'EnableSnowOnGround': True,
+                'MultiHitZombies': False,
+                'RearVulnerability': 3,  # High
+                'AttackBlockMovements': True,
+            },
+            'Survivor': {
+                'Zombies': 4,  # Normal
+                'Distribution': 1,  # Urban Focused
+                'DayLength': 3,  # 1 Hour
+                'StartMonth': 7,  # July
+                'StartDay': 9,
+                'WaterShut': 3,  # 0-2 Months
+                'ElecShut': 3,  # 0-2 Months
+                'TimeSinceApo': 1,  # 0-1 Month
+                'XpMultiplier': 1.0,
+                'ZombieRespawn': 4,  # None
+                'Speed': 3,  # Shamblers
+                'Strength': 2,  # Normal
+                'Toughness': 2,  # Normal
+                'Transmission': 1,  # Blood + Saliva
+                'Mortality': 5,  # 2-3 Days
+                'Reanimate': 3,  # 0-1 Minutes
+                'Cognition': 3,  # Basic Navigation
+                'Memory': 2,  # Normal
+                'Sight': 2,  # Normal
+                'Hearing': 2,  # Normal
+                'ThumpNoChasing': False,
+                'ThumpOnConstruction': False,
+                'ActiveOnly': 1,  # Both
+                'TriggerHouseAlarm': True,
+                'ZombiesDragDown': True,
+                'ZombiesFenceLunge': True,
+                'MultiHitZombies': True,
+                'RearVulnerability': 3,  # High
+            },
+            'Builder': {
+                'Zombies': 5,  # Low
+                'Distribution': 1,  # Urban Focused
+                'DayLength': 3,  # 1 Hour
+                'StartMonth': 7,  # July
+                'StartDay': 9,
+                'WaterShut': 5,  # 6-12 Months
+                'ElecShut': 5,  # 6-12 Months
+                'TimeSinceApo': 1,  # 0-1 Month
+                'XpMultiplier': 1.0,
+                'ZombieRespawn': 4,  # None
+                'Speed': 3,  # Shamblers
+                'Strength': 2,  # Normal
+                'Toughness': 3,  # Fragile
+                'Transmission': 1,  # Blood + Saliva
+                'Mortality': 5,  # 2-3 Days
+                'Reanimate': 3,  # 0-1 Minutes
+                'Cognition': 3,  # Basic Navigation
+                'Memory': 2,  # Normal
+                'Sight': 3,  # Poor
+                'Hearing': 3,  # Poor
+                'ThumpNoChasing': True,
+                'ThumpOnConstruction': False,
+                'ActiveOnly': 1,  # Both
+                'TriggerHouseAlarm': True,
+                'ZombiesDragDown': False,
+                'ZombiesFenceLunge': False,
+                'MultiHitZombies': True,
+                'RearVulnerability': 3,  # High
+                'FoodLoot': 2.0,
+                'WeaponLoot': 2.0,
+            },
+            'Beginner': {
+                'Zombies': 5,  # Low
+                'Distribution': 2,  # Uniform
+                'DayLength': 1,  # 15 Minutes
+                'StartMonth': 7,  # July
+                'StartDay': 9,
+                'WaterShut': 5,  # 6-12 Months
+                'ElecShut': 5,  # 6-12 Months
+                'TimeSinceApo': 1,  # 0-1 Month
+                'XpMultiplier': 1.5,
+                'ZombieRespawn': 4,  # None
+                'Speed': 3,  # Shamblers
+                'Strength': 3,  # Weak
+                'Toughness': 3,  # Fragile
+                'Transmission': 2,  # Saliva Only
+                'Mortality': 6,  # 1-2 Weeks
+                'Reanimate': 5,  # 2-3 Days
+                'Cognition': 3,  # Basic Navigation
+                'Memory': 3,  # Short
+                'Sight': 3,  # Poor
+                'Hearing': 3,  # Poor
+                'ThumpNoChasing': True,
+                'ThumpOnConstruction': False,
+                'ActiveOnly': 2,  # Night
+                'TriggerHouseAlarm': True,
+                'ZombiesDragDown': False,
+                'ZombiesFenceLunge': False,
+                'MultiHitZombies': True,
+                'RearVulnerability': 3,  # High
+                'FoodLoot': 2.0,
+                'WeaponLoot': 2.0,
+                'StarterKit': True,
+            },
+            'First Week': {
+                'Zombies': 4,  # Normal
+                'Distribution': 1,  # Urban Focused
+                'DayLength': 3,  # 1 Hour
+                'StartMonth': 7,  # July
+                'StartDay': 9,
+                'WaterShut': 1,  # Instant
+                'ElecShut': 1,  # Instant
+                'TimeSinceApo': 1,  # 0-1 Month
+                'XpMultiplier': 1.0,
+                'ZombieRespawn': 1,  # High
+                'Speed': 2,  # Fast Shamblers
+                'Strength': 2,  # Normal
+                'Toughness': 2,  # Normal
+                'Transmission': 1,  # Blood + Saliva
+                'Mortality': 5,  # 2-3 Days
+                'Reanimate': 3,  # 0-1 Minutes
+                'Cognition': 3,  # Basic Navigation
+                'Memory': 2,  # Normal
+                'Sight': 2,  # Normal
+                'Hearing': 2,  # Normal
+                'ThumpNoChasing': False,
+                'ThumpOnConstruction': True,
+                'ActiveOnly': 1,  # Both
+                'TriggerHouseAlarm': False,
+                'ZombiesDragDown': True,
+                'ZombiesFenceLunge': True,
+                'MultiHitZombies': False,
+                'RearVulnerability': 3,  # High
+            },
+            'Six Months Later': {
+                'Zombies': 3,  # High
+                'Distribution': 1,  # Urban Focused
+                'DayLength': 3,  # 1 Hour
+                'StartMonth': 1,  # January
+                'StartDay': 9,
+                'WaterShut': 1,  # Instant
+                'ElecShut': 1,  # Instant
+                'TimeSinceApo': 3,  # 6-12 Months
+                'XpMultiplier': 1.0,
+                'ZombieRespawn': 4,  # None
+                'Speed': 2,  # Fast Shamblers
+                'Strength': 2,  # Normal
+                'Toughness': 2,  # Normal
+                'Transmission': 1,  # Blood + Saliva
+                'Mortality': 5,  # 2-3 Days
+                'Reanimate': 3,  # 0-1 Minutes
+                'Cognition': 3,  # Basic Navigation
+                'Memory': 2,  # Normal
+                'Sight': 2,  # Normal
+                'Hearing': 2,  # Normal
+                'ThumpNoChasing': False,
+                'ThumpOnConstruction': True,
+                'ActiveOnly': 1,  # Both
+                'TriggerHouseAlarm': False,
+                'ZombiesDragDown': True,
+                'ZombiesFenceLunge': True,
+                'MultiHitZombies': False,
+                'RearVulnerability': 3,  # High
+                'FoodLoot': 0.5,
+                'ErosionSpeed': 4,  # Faster
+            },
+            'Survival': {
+                'Zombies': 4,  # Normal
+                'Distribution': 1,  # Urban Focused
+                'DayLength': 3,  # 1 Hour
+                'StartMonth': 7,  # July
+                'StartDay': 9,
+                'WaterShut': 3,  # 0-2 Months
+                'ElecShut': 3,  # 0-2 Months
+                'TimeSinceApo': 1,  # 0-1 Month
+                'XpMultiplier': 1.0,
+                'ZombieRespawn': 4,  # None
+                'Speed': 2,  # Fast Shamblers
+                'Strength': 2,  # Normal
+                'Toughness': 1,  # Tough
+                'Transmission': 1,  # Blood + Saliva
+                'Mortality': 5,  # 2-3 Days
+                'Reanimate': 3,  # 0-1 Minutes
+                'Cognition': 2,  # Navigate
+                'Memory': 1,  # Long
+                'Sight': 1,  # Eagle
+                'Hearing': 1,  # Pinpoint
+                'ThumpNoChasing': False,
+                'ThumpOnConstruction': True,
+                'ActiveOnly': 1,  # Both
+                'TriggerHouseAlarm': False,
+                'ZombiesDragDown': True,
+                'ZombiesFenceLunge': True,
+                'MultiHitZombies': False,
+                'RearVulnerability': 2,  # Medium
+            }
+        }
+    
+    def preview_preset(self):
+        """Show preview of what the preset will change"""
+        preset = self.preset_var.get()
+        
+        if preset == 'Custom (Current)' or preset == '---':
+            messagebox.showinfo("No Preview", "Select a preset to preview its settings.", parent=self)
+            return
+        
+        # Check if it's custom or built-in
+        if preset in self.custom_presets:
+            preset_data = self.custom_presets[preset]
+            is_custom = True
+        else:
+            presets = self.get_preset_data()
+            if preset not in presets:
+                return
+            preset_data = presets[preset]
+            is_custom = False
+        
+        # Build preview message showing key differences
+        preview_lines = []
+        if is_custom:
+            preview_lines.append(f"📋 {preset} (Custom Preset) Preview\n")
+        else:
+            preview_lines.append(f"📋 {preset} Preset Preview\n")
+        preview_lines.append("Key Settings:\n")
+        
+        # Show important settings
+        important_keys = [
+            ('Zombies', 'Zombie Population'),
+            ('Speed', 'Zombie Speed'),
+            ('Strength', 'Zombie Strength'),
+            ('Toughness', 'Zombie Toughness'),
+            ('Memory', 'Zombie Memory'),
+            ('Sight', 'Zombie Sight'),
+            ('Hearing', 'Zombie Hearing'),
+            ('Transmission', 'Infection Type'),
+            ('Mortality', 'Infection Mortality'),
+            ('WaterShut', 'Water Shutoff'),
+            ('ElecShut', 'Electricity Shutoff'),
+            ('XpMultiplier', 'XP Multiplier'),
+            ('ZombieRespawn', 'Zombie Respawn'),
+            ('StartMonth', 'Start Month'),
+        ]
+        
+        for key, label in important_keys:
+            if key in preset_data:
+                value = preset_data[key]
+                
+                # Get human-readable value
+                if key in self.settings:
+                    widget_info = self.settings[key]
+                    if widget_info['type'] == 'choice':
+                        # Find choice name
+                        for choice_name, choice_val in widget_info['choices'].items():
+                            if choice_val == value:
+                                preview_lines.append(f"  • {label}: {choice_name}")
+                                break
+                    else:
+                        preview_lines.append(f"  • {label}: {value}")
+        
+        preview_lines.append(f"\n📊 Total: {len(preset_data)} settings will be changed")
+        preview_lines.append("\n✅ Click 'Apply Preset' to use these settings")
+        
+        # Create preview window
+        preview_window = tk.Toplevel(self)
+        preview_window.title(f"{preset} Preset Preview")
+        preview_window.geometry("500x600")
+        
+        # Apply theme
+        if hasattr(self.parent, 'current_theme'):
+            theme = self.parent.current_theme.get()
+            if theme == "dark":
+                preview_window.configure(bg="#2b2b2b")
+            else:
+                preview_window.configure(bg="#f5f5f5")
+        
+        # Add scrolled text
+        text_colors = self.parent.get_text_colors() if hasattr(self.parent, 'get_text_colors') else {}
+        import tkinter.scrolledtext as scrolledtext
+        text_widget = scrolledtext.ScrolledText(preview_window, wrap=tk.WORD, width=60, height=35, **text_colors)
+        text_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        text_widget.insert(1.0, '\n'.join(preview_lines))
+        text_widget.config(state='disabled')
+        
+        ttk.Button(preview_window, text="Close", command=preview_window.destroy).pack(pady=10)
+    
+    def apply_preset(self):
+        """Apply a gameplay preset"""
+        preset = self.preset_var.get()
+        
+        if preset == 'Custom (Current)' or preset == '---':
+            return
+        
+        if not messagebox.askyesno("Apply Preset", 
+                                   f"Apply '{preset}' preset?\n\n"
+                                   f"This will overwrite current sandbox settings.\n"
+                                   f"(Basic server settings like name/password won't change)",
+                                   icon='warning', parent=self):
+            return
+        
+        # Check if it's a built-in or custom preset
+        if preset in self.custom_presets:
+            preset_data = self.custom_presets[preset]
+        else:
+            presets = self.get_preset_data()
+            if preset not in presets:
+                messagebox.showerror("Error", f"Preset '{preset}' not found", parent=self)
+                return
+            preset_data = presets[preset]
+        
+        # Apply the preset values
+        for key, value in preset_data.items():
+            if key in self.settings:
+                widget_info = self.settings[key]
+                
+                if widget_info['type'] == 'choice':
+                    # Find the choice name for this value
+                    for choice_name, choice_value in widget_info['choices'].items():
+                        if choice_value == value:
+                            widget_info['var'].set(choice_name)
+                            break
+                elif widget_info['type'] == 'bool':
+                    widget_info['var'].set(value)
+                elif widget_info['type'] == 'number':
+                    widget_info['widget'].delete(0, tk.END)
+                    widget_info['widget'].insert(0, str(value))
+                elif widget_info['type'] == 'slider':
+                    widget_info['var'].set(value)
+        
+        messagebox.showinfo("Preset Applied", 
+                          f"'{preset}' preset has been applied!\n\n"
+                          f"Click 'Save Changes' to write to config files.", parent=self)
+        self.preset_var.set('Custom (Current)')
+    
     def add_slider_setting(self, parent, key, label, row, min_val, max_val, step, is_lua=False):
         """Add a slider setting for decimal values with entry box for precise input"""
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky=tk.W, padx=5, pady=5)
@@ -3791,7 +4565,7 @@ class SettingsEditorWindow(tk.Toplevel):
         if not messagebox.askyesno("Confirm Save", 
                                    "Save changes to server configuration?\n\n"
                                    "Server must be restarted for changes to take effect.",
-                                   icon='warning'):
+                                   icon='warning', parent=self):
             return
         
         try:
@@ -3876,14 +4650,14 @@ class SettingsEditorWindow(tk.Toplevel):
             messagebox.showinfo("Success", 
                                f"Settings saved!\n\n"
                                f"Backups created with timestamp {timestamp}\n\n"
-                               f"Server must be restarted for changes to take effect.")
+                               f"Server must be restarted for changes to take effect.", parent=self)
             
             self.parent.log_command_output(f"Settings saved. Backups created: {timestamp}")
             
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            messagebox.showerror("Error", f"Failed to save settings:\n\n{str(e)}\n\nDetails:\n{error_details}")
+            messagebox.showerror("Error", f"Failed to save settings:\n\n{str(e)}\n\nDetails:\n{error_details}", parent=self)
             print(f"Save error: {error_details}")  # Also print to console
     
     def view_raw_files(self):
