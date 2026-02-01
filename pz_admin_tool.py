@@ -208,6 +208,9 @@ class PZServerAdmin(tk.Tk):
         
         self.create_widgets()
         self.load_config()
+        
+        # Check for saved restart timer and offer to resume
+        self.after(500, self._check_and_resume_restart_timer)
     
     def create_menu(self):
         """Create menu bar"""
@@ -1467,7 +1470,13 @@ Screen:
     def start_restart_countdown(self, total_minutes, warnings):
         """Start the restart countdown with progress window"""
         self.restart_countdown_active = True
-        self.restart_time_remaining = total_minutes * 60  # Convert to seconds
+        
+        # Only set time remaining if not already set (allows resuming with elapsed time)
+        if not hasattr(self, 'restart_time_remaining') or self.restart_time_remaining <= 0:
+            self.restart_time_remaining = total_minutes * 60  # Convert to seconds
+        
+        # Save restart timer state to file (for recovery if program closes)
+        self._save_restart_timer_state(total_minutes, warnings)
         
         # Create countdown window
         countdown_window = tk.Toplevel(self)
@@ -1478,12 +1487,17 @@ Screen:
             countdown_window.title("Server Restart in Progress")
             title_text = "⏰ Server Restart Scheduled"
         
-        countdown_window.geometry("450x250")
-        countdown_window.transient(self)
+        countdown_window.geometry("450x280")
+        # countdown_window.transient(self)  # Removed - prevents minimize
         self.apply_dialog_theme(countdown_window)
         
-        # Prevent closing without canceling
-        countdown_window.protocol("WM_DELETE_WINDOW", lambda: None)
+        # Allow closing/minimizing - timer continues
+        def minimize_window():
+            if messagebox.askyesno("Minimize Timer", 
+                                  "Close countdown window? Timer continues in background.", 
+                                  parent=countdown_window):
+                countdown_window.destroy()
+        countdown_window.protocol("WM_DELETE_WINDOW", minimize_window)
         
         ttk.Label(countdown_window, text=title_text, 
                  font=('TkDefaultFont', 12, 'bold')).pack(pady=15)
@@ -1506,6 +1520,7 @@ Screen:
         def cancel_restart():
             self.restart_countdown_active = False
             self.restart_indicator.config(text="")  # Clear indicator
+            self._clear_restart_timer_state()  # Clear saved state
             countdown_window.destroy()
             if self.rcon and self.rcon.authenticated:
                 try:
@@ -1527,8 +1542,11 @@ Screen:
             # Update time display
             mins = self.restart_time_remaining // 60
             secs = self.restart_time_remaining % 60
-            time_label.config(text=f"{mins:02d}:{secs:02d}")
-            progress['value'] = self.restart_time_remaining
+            try:
+                time_label.config(text=f"{mins:02d}:{secs:02d}")
+                progress['value'] = self.restart_time_remaining
+            except tk.TclError:
+                pass  # Window closed
             
             # Update admin indicator in main window
             if mins > 0:
@@ -1601,12 +1619,13 @@ Screen:
                 
                 # Check if should repeat
                 if warnings.get('repeat', False):
-                    # Schedule next restart with same settings
+                    # Schedule next restart with same settings (state will be saved again when it starts)
                     self.after(5000, lambda: self.start_restart_countdown(total_minutes, warnings))
                     self.log_command_output(f"🔄 Repeating restart scheduled - next restart in {total_minutes} minutes")
                 else:
-                    # One-time restart, clear indicator
+                    # One-time restart, clear indicator and saved state
                     self.restart_indicator.config(text="")
+                    self._clear_restart_timer_state()
                 
                 return
             
@@ -1616,6 +1635,100 @@ Screen:
         
         # Start the countdown
         update_countdown()
+    
+    def _save_restart_timer_state(self, total_minutes, warnings):
+        """Save restart timer state to file for recovery"""
+        try:
+            import time
+            state = {
+                'start_time': time.time(),  # Unix timestamp when timer started
+                'total_minutes': total_minutes,
+                'warnings': warnings
+            }
+            config_file = Path.home() / '.pz_admin_tool_restart_timer.json'
+            with open(config_file, 'w') as f:
+                json.dump(state, f, indent=2)
+        except (IOError, OSError) as e:
+            pass  # Non-critical if save fails
+    
+    def _load_restart_timer_state(self):
+        """Load restart timer state from file"""
+        try:
+            config_file = Path.home() / '.pz_admin_tool_restart_timer.json'
+            if config_file.exists():
+                with open(config_file, 'r') as f:
+                    return json.load(f)
+        except (IOError, OSError, json.JSONDecodeError):
+            pass
+        return None
+    
+    def _clear_restart_timer_state(self):
+        """Clear saved restart timer state"""
+        try:
+            config_file = Path.home() / '.pz_admin_tool_restart_timer.json'
+            if config_file.exists():
+                config_file.unlink()
+        except (IOError, OSError):
+            pass
+    
+    def _check_and_resume_restart_timer(self):
+        """Check if there's a saved timer and offer to resume it"""
+        import time
+        state = self._load_restart_timer_state()
+        
+        if not state:
+            return  # No saved timer
+        
+        start_time = state.get('start_time')
+        total_minutes = state.get('total_minutes')
+        warnings = state.get('warnings', {})
+        
+        if not start_time or not total_minutes:
+            self._clear_restart_timer_state()
+            return
+        
+        # Calculate elapsed time
+        elapsed_seconds = int(time.time() - start_time)
+        total_seconds = total_minutes * 60
+        remaining_seconds = total_seconds - elapsed_seconds
+        
+        # If timer already expired, clear it
+        if remaining_seconds <= 0:
+            self._clear_restart_timer_state()
+            if warnings.get('repeat', False):
+                # If it was repeating, ask if they want to restart it
+                response = messagebox.askyesno(
+                    "Repeating Restart Timer Expired",
+                    f"A repeating restart timer was running but has expired.\n\n"
+                    f"The server was scheduled to restart every {total_minutes} minutes.\n\n"
+                    f"Would you like to restart the timer now?",
+                    icon='question'
+                )
+                if response:
+                    self.start_restart_countdown(total_minutes, warnings)
+            return
+        
+        # Timer still active - offer to resume
+        remaining_minutes = remaining_seconds // 60
+        remaining_secs = remaining_seconds % 60
+        
+        response = messagebox.askyesno(
+            "Resume Restart Timer?",
+            f"A restart timer was active when the program last closed.\n\n"
+            f"Time remaining: {remaining_minutes}m {remaining_secs}s\n"
+            f"{'🔄 Repeating timer' if warnings.get('repeat') else 'One-time restart'}\n\n"
+            f"Resume the countdown?",
+            icon='question'
+        )
+        
+        if response:
+            # Resume timer with remaining time
+            remaining_minutes_float = remaining_seconds / 60
+            self.restart_time_remaining = remaining_seconds
+            self.start_restart_countdown(total_minutes, warnings)
+        else:
+            # User declined, clear the saved state
+            self._clear_restart_timer_state()
     
     def check_server_status(self):
         """Check server status"""
