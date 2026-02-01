@@ -2,6 +2,7 @@
 
 All notable changes to the Project Zomboid Server Admin Tool will be documented in this file.
 
+<<<<<<< HEAD
 ## [1.2.0] - 2026-01-31
 
 ### Added
@@ -31,6 +32,8 @@ All notable changes to the Project Zomboid Server Admin Tool will be documented 
 - All popup dialogs inherit theme correctly
 - Button visibility in dialogs improved
 
+=======
+>>>>>>> b2191b288d654d403a8ed1dea4c270cea41a5b61
 ## [1.1.0] - 2026-01-31
 
 ### Added

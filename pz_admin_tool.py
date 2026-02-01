@@ -11,10 +11,12 @@ import threading
 import time
 import sqlite3
 import os
+import json
+import re
+import subprocess
+import webbrowser
 from pathlib import Path
 from datetime import datetime
-import json
-import webbrowser
 
 
 class RCONClient:
@@ -112,8 +114,8 @@ class RCONClient:
         if self.sock:
             try:
                 self.sock.close()
-            except:
-                pass
+            except (OSError, socket.error):
+                pass  # Socket already closed, ignore
             self.sock = None
             self.authenticated = False
     
@@ -186,6 +188,10 @@ class PZServerAdmin(tk.Tk):
         self.rcon = None
         self.auto_refresh = False
         self.server_path = tk.StringVar()
+        
+        # Restart countdown tracking
+        self.restart_countdown_active = False
+        self.restart_time_remaining = 0
         
         # Theme and appearance settings
         self.current_theme = tk.StringVar(value="light")
@@ -260,8 +266,8 @@ class PZServerAdmin(tk.Tk):
             # Use 'clam' theme as base - it handles colors better
             try:
                 style.theme_use('clam')
-            except:
-                style.theme_use('default')
+            except tk.TclError:
+                style.theme_use('default')  # Fallback if clam not available
             
             # Configure all ttk styles consistently
             style.configure(".", background=bg_main, foreground=fg_main,
@@ -377,8 +383,8 @@ class PZServerAdmin(tk.Tk):
             
             try:
                 style.theme_use('clam')
-            except:
-                style.theme_use('default')
+            except tk.TclError:
+                style.theme_use('default')  # Fallback if clam not available
             
             # Reset to light defaults
             style.configure(".", background=bg_main, foreground=fg_main,
@@ -474,7 +480,6 @@ class PZServerAdmin(tk.Tk):
     def save_appearance_settings(self):
         """Save appearance settings to file"""
         try:
-            import json
             config = {
                 'theme': self.current_theme.get(),
                 'font_size': self.font_size.get()
@@ -482,26 +487,25 @@ class PZServerAdmin(tk.Tk):
             config_file = Path.home() / '.pz_admin_tool_appearance.json'
             with open(config_file, 'w') as f:
                 json.dump(config, f, indent=2)
-        except:
-            pass
+        except (IOError, OSError) as e:
+            pass  # Silently fail if can't save preferences
     
     def load_appearance_settings(self):
         """Load appearance settings from file"""
         try:
-            import json
             config_file = Path.home() / '.pz_admin_tool_appearance.json'
             if config_file.exists():
                 with open(config_file, 'r') as f:
                     config = json.load(f)
                     self.current_theme.set(config.get('theme', 'light'))
                     self.font_size.set(config.get('font_size', 9))
-        except:
-            pass
+        except (IOError, OSError, json.JSONDecodeError):
+            pass  # Use defaults if can't load preferences
     
     def show_about(self):
         """Show about dialog"""
         about_text = """Project Zomboid Server Administration Tool
-Version 1.2.0
+Version 1.3.0
 
 A comprehensive GUI tool for managing Project Zomboid dedicated servers.
 
@@ -578,6 +582,10 @@ Created with ❤️ for the PZ community
         
         self.status_label = ttk.Label(conn_frame, text="Status: Disconnected", foreground="red")
         self.status_label.grid(row=0, column=8, padx=10)
+        
+        # Restart timer indicator (initially hidden)
+        self.restart_indicator = ttk.Label(conn_frame, text="", foreground="orange", font=('TkDefaultFont', 9, 'bold'))
+        self.restart_indicator.grid(row=0, column=9, padx=10)
         
         # Server Path Frame
         path_frame = ttk.LabelFrame(self, text="Server Files (Optional - for Mods/Logs viewing)", padding=10)
@@ -708,6 +716,7 @@ Created with ❤️ for the PZ community
         ttk.Button(control_frame, text="Start Server", command=self.start_server).pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="Stop Server", command=self.stop_server).pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="Restart Server", command=self.restart_server).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Scheduled Restart", command=self.open_restart_timer).pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="Check Status", command=self.check_server_status).pack(side=tk.LEFT, padx=5)
         ttk.Button(control_frame, text="Configure Commands", command=self.configure_server_control).pack(side=tk.LEFT, padx=5)
         
@@ -1260,19 +1269,17 @@ Screen:
         try:
             config_file = Path.home() / '.pz_admin_tool_server_control.json'
             if config_file.exists():
-                import json
                 with open(config_file, 'r') as f:
                     config = json.load(f)
                     start_entry.insert(0, config.get('start_cmd', ''))
                     stop_entry.insert(0, config.get('stop_cmd', ''))
                     restart_entry.insert(0, config.get('restart_cmd', ''))
                     status_entry.insert(0, config.get('status_cmd', ''))
-        except:
-            pass
+        except (IOError, OSError, json.JSONDecodeError):
+            pass  # Use empty fields if can't load config
         
         # Save button
         def save_commands():
-            import json
             config = {
                 'start_cmd': start_entry.get(),
                 'stop_cmd': stop_entry.get(),
@@ -1298,11 +1305,10 @@ Screen:
         try:
             config_file = Path.home() / '.pz_admin_tool_server_control.json'
             if config_file.exists():
-                import json
                 with open(config_file, 'r') as f:
                     return json.load(f)
-        except:
-            pass
+        except (IOError, OSError, json.JSONDecodeError):
+            pass  # Return empty dict if can't load
         return {}
     
     def _execute_shell_command(self, command, action_name):
@@ -1314,7 +1320,6 @@ Screen:
             return
         
         try:
-            import subprocess
             self.log_command_output(f"Executing {action_name}: {command}")
             
             # Execute command
@@ -1369,6 +1374,248 @@ Screen:
                               "⚠️ Make sure to save first!",
                               icon='warning'):
             self._execute_shell_command(cmd, "Restart Server")
+    
+    def open_restart_timer(self):
+        """Open scheduled restart timer dialog"""
+        dialog = tk.Toplevel(self)
+        dialog.title("Scheduled Server Restart")
+        dialog.geometry("500x400")
+        dialog.transient(self)
+        dialog.grab_set()
+        self.apply_dialog_theme(dialog)
+        
+        ttk.Label(dialog, text="Schedule Server Restart with Countdown", 
+                 font=('TkDefaultFont', 11, 'bold')).pack(pady=10)
+        
+        # Time selection frame
+        time_frame = ttk.LabelFrame(dialog, text="Restart In", padding=10)
+        time_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        # Minutes selection
+        ttk.Label(time_frame, text="Minutes:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        minutes_var = tk.IntVar(value=30)
+        minutes_spin = ttk.Spinbox(time_frame, from_=1, to=480, textvariable=minutes_var, width=10)
+        minutes_spin.grid(row=0, column=1, padx=5, pady=5)
+        
+        # Quick presets
+        preset_frame = ttk.Frame(time_frame)
+        preset_frame.grid(row=1, column=0, columnspan=2, pady=10)
+        
+        ttk.Button(preset_frame, text="5 min", command=lambda: minutes_var.set(5)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(preset_frame, text="15 min", command=lambda: minutes_var.set(15)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(preset_frame, text="30 min", command=lambda: minutes_var.set(30)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(preset_frame, text="1 hour", command=lambda: minutes_var.set(60)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(preset_frame, text="2 hours", command=lambda: minutes_var.set(120)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(preset_frame, text="3 hours", command=lambda: minutes_var.set(180)).pack(side=tk.LEFT, padx=2)
+        
+        # Warning intervals
+        warnings_frame = ttk.LabelFrame(dialog, text="Warning Intervals", padding=10)
+        warnings_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        warn_30min = tk.BooleanVar(value=True)
+        warn_15min = tk.BooleanVar(value=True)
+        warn_10min = tk.BooleanVar(value=True)
+        warn_5min = tk.BooleanVar(value=True)
+        warn_1min = tk.BooleanVar(value=True)
+        warn_30sec = tk.BooleanVar(value=True)
+        
+        ttk.Checkbutton(warnings_frame, text="30 minutes", variable=warn_30min).grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(warnings_frame, text="15 minutes", variable=warn_15min).grid(row=0, column=1, sticky=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(warnings_frame, text="10 minutes", variable=warn_10min).grid(row=0, column=2, sticky=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(warnings_frame, text="5 minutes", variable=warn_5min).grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(warnings_frame, text="1 minute", variable=warn_1min).grid(row=1, column=1, sticky=tk.W, padx=5, pady=2)
+        ttk.Checkbutton(warnings_frame, text="30 seconds", variable=warn_30sec).grid(row=1, column=2, sticky=tk.W, padx=5, pady=2)
+        
+        # Options
+        options_frame = ttk.LabelFrame(dialog, text="Options", padding=10)
+        options_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        auto_save = tk.BooleanVar(value=True)
+        ttk.Checkbutton(options_frame, text="Auto-save 1 minute before restart", variable=auto_save).pack(anchor=tk.W)
+        
+        repeat_restart = tk.BooleanVar(value=False)
+        ttk.Checkbutton(options_frame, text="🔄 Repeat restart automatically (for daily/scheduled restarts)", 
+                       variable=repeat_restart).pack(anchor=tk.W, pady=(5, 0))
+        
+        # Buttons
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        def start_countdown():
+            minutes = minutes_var.get()
+            if minutes < 1:
+                messagebox.showwarning("Invalid Time", "Please enter at least 1 minute")
+                return
+            
+            warnings = {
+                'warn_30min': warn_30min.get(),
+                'warn_15min': warn_15min.get(),
+                'warn_10min': warn_10min.get(),
+                'warn_5min': warn_5min.get(),
+                'warn_1min': warn_1min.get(),
+                'warn_30sec': warn_30sec.get(),
+                'auto_save': auto_save.get(),
+                'repeat': repeat_restart.get()
+            }
+            
+            dialog.destroy()
+            self.start_restart_countdown(minutes, warnings)
+        
+        ttk.Button(btn_frame, text="Start Countdown", command=start_countdown).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT, padx=5)
+    
+    def start_restart_countdown(self, total_minutes, warnings):
+        """Start the restart countdown with progress window"""
+        self.restart_countdown_active = True
+        self.restart_time_remaining = total_minutes * 60  # Convert to seconds
+        
+        # Create countdown window
+        countdown_window = tk.Toplevel(self)
+        if warnings.get('repeat', False):
+            countdown_window.title("Repeating Server Restart")
+            title_text = "🔄 Repeating Server Restart"
+        else:
+            countdown_window.title("Server Restart in Progress")
+            title_text = "⏰ Server Restart Scheduled"
+        
+        countdown_window.geometry("450x250")
+        countdown_window.transient(self)
+        self.apply_dialog_theme(countdown_window)
+        
+        # Prevent closing without canceling
+        countdown_window.protocol("WM_DELETE_WINDOW", lambda: None)
+        
+        ttk.Label(countdown_window, text=title_text, 
+                 font=('TkDefaultFont', 12, 'bold')).pack(pady=15)
+        
+        # Time remaining label
+        time_label = ttk.Label(countdown_window, text="", font=('TkDefaultFont', 16))
+        time_label.pack(pady=10)
+        
+        # Progress bar
+        progress = ttk.Progressbar(countdown_window, length=400, mode='determinate')
+        progress.pack(pady=10)
+        progress['maximum'] = total_minutes * 60
+        progress['value'] = total_minutes * 60
+        
+        # Status label
+        status_label = ttk.Label(countdown_window, text="Countdown active...")
+        status_label.pack(pady=10)
+        
+        # Cancel button
+        def cancel_restart():
+            self.restart_countdown_active = False
+            self.restart_indicator.config(text="")  # Clear indicator
+            countdown_window.destroy()
+            if self.rcon and self.rcon.authenticated:
+                try:
+                    self.rcon.execute_command('servermsg "Server restart has been CANCELLED."')
+                except Exception:
+                    pass
+            messagebox.showinfo("Cancelled", "Server restart has been cancelled")
+        
+        ttk.Button(countdown_window, text="Cancel Restart", command=cancel_restart).pack(pady=10)
+        
+        # Warning tracking
+        warnings_sent = set()
+        total_seconds = total_minutes * 60
+        
+        def update_countdown():
+            if not self.restart_countdown_active:
+                return
+            
+            # Update time display
+            mins = self.restart_time_remaining // 60
+            secs = self.restart_time_remaining % 60
+            time_label.config(text=f"{mins:02d}:{secs:02d}")
+            progress['value'] = self.restart_time_remaining
+            
+            # Update admin indicator in main window
+            if mins > 0:
+                self.restart_indicator.config(text=f"⏰ Restart in {mins}m {secs}s")
+            else:
+                self.restart_indicator.config(text=f"⏰ Restart in {secs}s")
+            
+            # Check for warnings
+            if self.rcon and self.rcon.authenticated:
+                try:
+                    # 30 minutes
+                    if warnings['warn_30min'] and self.restart_time_remaining == 1800 and '30min' not in warnings_sent:
+                        self.rcon.execute_command('servermsg "Server will restart in 30 minutes! Please finish up."')
+                        status_label.config(text="⚠️ 30 minute warning sent")
+                        warnings_sent.add('30min')
+                    
+                    # 15 minutes
+                    elif warnings['warn_15min'] and self.restart_time_remaining == 900 and '15min' not in warnings_sent:
+                        self.rcon.execute_command('servermsg "Server will restart in 15 minutes!"')
+                        status_label.config(text="⚠️ 15 minute warning sent")
+                        warnings_sent.add('15min')
+                    
+                    # 10 minutes
+                    elif warnings['warn_10min'] and self.restart_time_remaining == 600 and '10min' not in warnings_sent:
+                        self.rcon.execute_command('servermsg "Server will restart in 10 minutes!"')
+                        status_label.config(text="⚠️ 10 minute warning sent")
+                        warnings_sent.add('10min')
+                    
+                    # 5 minutes
+                    elif warnings['warn_5min'] and self.restart_time_remaining == 300 and '5min' not in warnings_sent:
+                        self.rcon.execute_command('servermsg "Server will restart in 5 minutes!"')
+                        status_label.config(text="⚠️ 5 minute warning sent")
+                        warnings_sent.add('5min')
+                    
+                    # 1 minute + auto-save
+                    elif warnings['warn_1min'] and self.restart_time_remaining == 60 and '1min' not in warnings_sent:
+                        self.rcon.execute_command('servermsg "Server will restart in 1 minute!"')
+                        if warnings['auto_save']:
+                            self.rcon.execute_command('save')
+                            status_label.config(text="💾 Auto-save triggered")
+                        else:
+                            status_label.config(text="⚠️ 1 minute warning sent")
+                        warnings_sent.add('1min')
+                    
+                    # 30 seconds
+                    elif warnings['warn_30sec'] and self.restart_time_remaining == 30 and '30sec' not in warnings_sent:
+                        self.rcon.execute_command('servermsg "Server restarting in 30 seconds!"')
+                        status_label.config(text="⚠️ 30 second warning sent")
+                        warnings_sent.add('30sec')
+                except Exception:
+                    pass  # Continue countdown even if message fails
+            
+            # Countdown complete
+            if self.restart_time_remaining <= 0:
+                self.restart_countdown_active = False
+                countdown_window.destroy()
+                
+                # Final warning
+                if self.rcon and self.rcon.authenticated:
+                    try:
+                        self.rcon.execute_command('servermsg "Server is restarting NOW!"')
+                    except Exception:
+                        pass
+                
+                # Execute restart
+                self.log_command_output("⏰ Scheduled restart time reached - restarting server...")
+                config = self._load_server_control_config()
+                cmd = config.get('restart_cmd', '')
+                self._execute_shell_command(cmd, "Scheduled Restart")
+                
+                # Check if should repeat
+                if warnings.get('repeat', False):
+                    # Schedule next restart with same settings
+                    self.after(5000, lambda: self.start_restart_countdown(total_minutes, warnings))
+                    self.log_command_output(f"🔄 Repeating restart scheduled - next restart in {total_minutes} minutes")
+                else:
+                    # One-time restart, clear indicator
+                    self.restart_indicator.config(text="")
+                
+                return
+            
+            # Decrement and schedule next update
+            self.restart_time_remaining -= 1
+            countdown_window.after(1000, update_countdown)
+        
+        # Start the countdown
+        update_countdown()
     
     def check_server_status(self):
         """Check server status"""
@@ -1431,8 +1678,6 @@ Screen:
     
     def open_workshop_in_browser(self):
         """Open selected Workshop ID in Steam browser"""
-        import webbrowser
-        import subprocess
         
         # Get selected item from workshop tree
         selection = self.workshop_tree.selection()
@@ -1453,8 +1698,8 @@ Screen:
             self.clipboard_append(url)
             self.update()
             clipboard_success = True
-        except:
-            clipboard_success = False
+        except tk.TclError:
+            clipboard_success = False  # Clipboard not available
         
         # Try multiple methods to open browser
         browser_opened = False
@@ -1463,36 +1708,36 @@ Screen:
         try:
             webbrowser.open(url)
             browser_opened = True
-        except:
-            pass
+        except (webbrowser.Error, OSError):
+            pass  # Try next method
         
         # Method 2: xdg-open (Linux)
         if not browser_opened:
             try:
                 subprocess.Popen(['xdg-open', url])
                 browser_opened = True
-            except:
-                pass
+            except (FileNotFoundError, OSError):
+                pass  # Try next method
         
         # Method 3: Direct firefox
         if not browser_opened:
             try:
                 subprocess.Popen(['firefox', url])
                 browser_opened = True
-            except:
-                pass
+            except (FileNotFoundError, OSError):
+                pass  # Try next method
         
         # Method 4: Direct chrome/chromium
         if not browser_opened:
             try:
                 subprocess.Popen(['google-chrome', url])
                 browser_opened = True
-            except:
+            except (FileNotFoundError, OSError):
                 try:
                     subprocess.Popen(['chromium-browser', url])
                     browser_opened = True
-                except:
-                    pass
+                except (FileNotFoundError, OSError):
+                    pass  # All methods failed
         
         # Show result
         if browser_opened:
@@ -1881,8 +2126,8 @@ Screen:
                     try:
                         self.rcon.execute_command(f'unbanuser "{username}"')
                         unbanned.append(username)
-                    except:
-                        pass
+                    except Exception as e:
+                        pass  # Continue trying to unban others
             
             self.log_command_output(f"Cleared all bans. Unbanned {len(unbanned)} users:\n" + 
                                    "\n".join(f"  - {u}" for u in unbanned))
@@ -2286,8 +2531,8 @@ Screen:
                 self.password_entry.insert(0, config.get('password', ''))
                 
                 self.server_path.set(config.get('server_path', ''))
-        except:
-            pass
+        except (IOError, OSError, json.JSONDecodeError):
+            pass  # Use defaults if can't load config
     
     def open_settings_editor(self):
         """Open the settings editor window"""
@@ -3391,7 +3636,6 @@ class SettingsEditorWindow(tk.Toplevel):
                 for key in self.settings:
                     if self.settings[key]['is_lua']:
                         # Simple regex to find setting
-                        import re
                         pattern = rf'{key}\s*=\s*([^,\n]+)'
                         match = re.search(pattern, content)
                         if match:
@@ -3486,7 +3730,6 @@ class SettingsEditorWindow(tk.Toplevel):
                     content = f.read()
                 
                 # Update each Lua setting
-                import re
                 for key in self.settings:
                     if self.settings[key]['is_lua']:
                         widget_info = self.settings[key]
