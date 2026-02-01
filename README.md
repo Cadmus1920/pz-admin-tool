@@ -88,6 +88,24 @@ All standard library - no pip packages required!
 
 ## Installation
 
+### Windows Users
+
+**Option 1: Standalone Executable (No Python Required)**
+
+Download `PZ-Admin-Tool-Windows.exe` from [Releases](https://github.com/Cadmus1920/pz-admin-tool/releases) and double-click to run!
+
+See [Windows Installation Guide](docs/WINDOWS_INSTALL.md) for details.
+
+**Option 2: Python Script**
+
+Requires Python 3.7+ from [python.org](https://www.python.org/)
+
+```bash
+python pz_admin_tool.py
+```
+
+### Linux/Mac Users
+
 ### 1. Download
 
 ```bash
@@ -95,12 +113,14 @@ git clone https://github.com/yourusername/pz-admin-tool.git
 cd pz-admin-tool
 ```
 
-### 2. Install Python TkInter (if needed)
+### 2. Install Python TkInter (Linux only, if needed)
 
 ```bash
 sudo apt-get update
 sudo apt-get install python3-tk
 ```
+
+Mac and Windows include tkinter by default.
 
 ### 3. Enable RCON on Your Server
 
