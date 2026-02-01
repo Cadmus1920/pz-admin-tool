@@ -11,10 +11,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     
@@ -43,7 +43,7 @@ jobs:
         mv dist/PZ-Admin-Tool.exe dist/PZ-Admin-Tool-${{ steps.get_version.outputs.VERSION }}-Windows.exe
     
     - name: Upload executable as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: PZ-Admin-Tool-Windows
         path: dist/PZ-Admin-Tool-*.exe
