@@ -327,6 +327,12 @@ class PZServerAdmin(tk.Tk):
                      foreground=[("readonly", fg_bright), ('focus', fg_bright)],
                      selectbackground=[('focus', select_bg)])
             
+            # Configure the dropdown list colors (this affects the popdown menu)
+            self.option_add('*TCombobox*Listbox.background', bg_input)
+            self.option_add('*TCombobox*Listbox.foreground', fg_bright)
+            self.option_add('*TCombobox*Listbox.selectBackground', select_bg)
+            self.option_add('*TCombobox*Listbox.selectForeground', fg_bright)
+            
             # Treeview
             style.configure("Treeview", background=bg_input, foreground=fg_bright,
                           fieldbackground=bg_input, bordercolor=border)
@@ -413,6 +419,12 @@ class PZServerAdmin(tk.Tk):
             style.map("TCombobox",
                      fieldbackground=[("readonly", bg_widget)])
             
+            # Configure the dropdown list colors
+            self.option_add('*TCombobox*Listbox.background', bg_widget)
+            self.option_add('*TCombobox*Listbox.foreground', fg_main)
+            self.option_add('*TCombobox*Listbox.selectBackground', select_bg)
+            self.option_add('*TCombobox*Listbox.selectForeground', select_fg)
+            
             # Treeview
             style.configure("Treeview", background=bg_widget, foreground=fg_main,
                           fieldbackground=bg_widget, bordercolor=border)
@@ -489,7 +501,7 @@ class PZServerAdmin(tk.Tk):
     def show_about(self):
         """Show about dialog"""
         about_text = """Project Zomboid Server Administration Tool
-Version 1.0.0
+Version 1.2.0
 
 A comprehensive GUI tool for managing Project Zomboid dedicated servers.
 
@@ -2528,6 +2540,11 @@ class SettingsEditorWindow(tk.Toplevel):
         notebook.add(world_frame, text="World & Environment")
         self.create_world_settings(world_frame)
         
+        # Vehicles
+        vehicles_frame = ttk.Frame(notebook)
+        notebook.add(vehicles_frame, text="Vehicles")
+        self.create_vehicles_settings(vehicles_frame)
+        
         # Survival & Health
         survival_frame = ttk.Frame(notebook)
         notebook.add(survival_frame, text="Survival & Health")
@@ -2771,25 +2788,105 @@ class SettingsEditorWindow(tk.Toplevel):
         
         # Zombie Memory
         self.add_choice_setting(scrollable_frame, 'Memory', 'Zombie Memory:', row, {
-            'Long': 1, 'Normal': 2, 'Short': 3, 'None': 4, 'Random': 5
+            'Long': 1, 'Normal': 2, 'Short': 3, 'None': 4, 'Random': 5, 'Random (Normal-None)': 6
         }, is_lua=True)
         row += 1
         
         # Zombie Sight
         self.add_choice_setting(scrollable_frame, 'Sight', 'Zombie Sight:', row, {
-            'Eagle': 1, 'Normal': 2, 'Poor': 3, 'Random': 4
+            'Eagle': 1, 'Normal': 2, 'Poor': 3, 'Random': 4, 'Random (Normal-Poor)': 5
         }, is_lua=True)
         row += 1
         
         # Zombie Hearing
         self.add_choice_setting(scrollable_frame, 'Hearing', 'Zombie Hearing:', row, {
-            'Pinpoint': 1, 'Normal': 2, 'Poor': 3, 'Random': 4
+            'Pinpoint': 1, 'Normal': 2, 'Poor': 3, 'Random': 4, 'Random (Normal-Poor)': 5
         }, is_lua=True)
         row += 1
         
         # Zombie Active Time
-        self.add_choice_setting(scrollable_frame, 'NightDarkness', 'Zombies Active:', row, {
+        self.add_choice_setting(scrollable_frame, 'ActiveOnly', 'Zombies Active:', row, {
             'Both': 1, 'Night': 2, 'Day': 3
+        }, is_lua=True)
+        row += 1
+        
+        # Crawl Under Vehicle
+        self.add_choice_setting(scrollable_frame, 'CrawlUnderVehicle', 'Crawl Under Vehicles:', row, {
+            'Crawlers Only': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4,
+            'Often': 5, 'Very Often': 6, 'Always': 7
+        }, is_lua=True)
+        row += 1
+        
+        # Distribution
+        self.add_choice_setting(scrollable_frame, 'Distribution', 'Zombie Distribution:', row, {
+            'Urban Focused': 1, 'Uniform': 2
+        }, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="Advanced Zombie Options", 
+                 font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Spotted Logic (stealth)
+        self.add_bool_setting(scrollable_frame, 'SpottedLogic', 'Advanced Stealth Mechanics:', row, is_lua=True)
+        row += 1
+        
+        # Thump No Chasing
+        self.add_bool_setting(scrollable_frame, 'ThumpNoChasing', 'Attack Doors While Roaming:', row, is_lua=True)
+        row += 1
+        
+        # Thump On Construction
+        self.add_bool_setting(scrollable_frame, 'ThumpOnConstruction', 'Destroy Player Constructions:', row, is_lua=True)
+        row += 1
+        
+        # Trigger House Alarm
+        self.add_bool_setting(scrollable_frame, 'TriggerHouseAlarm', 'Trigger House Alarms:', row, is_lua=True)
+        row += 1
+        
+        # Zombies Drag Down
+        self.add_bool_setting(scrollable_frame, 'ZombiesDragDown', 'Can Drag Down Player:', row, is_lua=True)
+        row += 1
+        
+        # Crawlers Drag Down
+        self.add_bool_setting(scrollable_frame, 'ZombiesCrawlersDragDown', 'Crawlers Can Drag Down:', row, is_lua=True)
+        row += 1
+        
+        # Fence Lunge
+        self.add_bool_setting(scrollable_frame, 'ZombiesFenceLunge', 'Fence/Window Lunge:', row, is_lua=True)
+        row += 1
+        
+        # Fake Dead
+        self.add_choice_setting(scrollable_frame, 'DisableFakeDead', 'Fake Dead Zombies:', row, {
+            'World Zombies': 1, 'World and Combat': 2, 'Never': 3
+        }, is_lua=True)
+        row += 1
+        
+        # Sprinter Percentage (for random speed)
+        self.add_slider_setting(scrollable_frame, 'SprinterPercentage', 'Sprinter % (if Random Speed):', row, 0, 100, 1, is_lua=True)
+        row += 1
+        
+        # Zombie Armor Factor
+        self.add_slider_setting(scrollable_frame, 'ZombiesArmorFactor', 'Zombie Armor Effectiveness:', row, 0, 100, 0.1, is_lua=True)
+        row += 1
+        
+        # Zombie Max Defense
+        self.add_number_setting(scrollable_frame, 'ZombiesMaxDefense', 'Max Zombie Defense %:', row, 0, 100, is_lua=True)
+        row += 1
+        
+        # Chance of Attached Weapon
+        self.add_number_setting(scrollable_frame, 'ChanceOfAttachedWeapon', 'Attached Weapon Chance %:', row, 0, 100, is_lua=True)
+        row += 1
+        
+        # Zombie Fall Damage
+        self.add_slider_setting(scrollable_frame, 'ZombiesFallDamage', 'Zombie Fall Damage Multiplier:', row, 0, 100, 0.1, is_lua=True)
+        row += 1
+        
+        # Player Spawn Zombie Removal
+        self.add_choice_setting(scrollable_frame, 'PlayerSpawnZombieRemoval', 'Zombie-Free Spawn Area:', row, {
+            'Building + Around': 1, 'Inside Building': 2, 'Inside Room': 3, 'Spawn Anywhere': 4
         }, is_lua=True)
         row += 1
         
@@ -2900,6 +2997,25 @@ class SettingsEditorWindow(tk.Toplevel):
         
         row = 0
         
+        # Day/Night Cycle
+        self.add_choice_setting(scrollable_frame, 'DayNightCycle', 'Day/Night Cycle:', row, {
+            'Normal': 1, 'Endless Day': 2, 'Endless Night': 3
+        }, is_lua=True)
+        row += 1
+        
+        # Climate Cycle
+        self.add_choice_setting(scrollable_frame, 'ClimateCycle', 'Weather Cycle:', row, {
+            'Normal': 1, 'No Weather': 2, 'Endless Rain': 3, 'Endless Storm': 4,
+            'Endless Snow': 5, 'Endless Blizzard': 6
+        }, is_lua=True)
+        row += 1
+        
+        # Fog Cycle
+        self.add_choice_setting(scrollable_frame, 'FogCycle', 'Fog Cycle:', row, {
+            'Normal': 1, 'No Fog': 2, 'Endless Fog': 3
+        }, is_lua=True)
+        row += 1
+        
         # Temperature
         self.add_choice_setting(scrollable_frame, 'Temperature', 'Temperature:', row, {
             'Very Cold': 1, 'Cold': 2, 'Normal': 3, 'Hot': 4
@@ -2975,6 +3091,100 @@ class SettingsEditorWindow(tk.Toplevel):
         
         # Allow Exterior Generators
         self.add_bool_setting(scrollable_frame, 'AllowExteriorGenerator', 'Allow Exterior Generators:', row, is_lua=True)
+        row += 1
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
+    def create_vehicles_settings(self, parent):
+        """Create vehicle settings"""
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind("<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        row = 0
+        
+        # Enable Vehicles
+        self.add_bool_setting(scrollable_frame, 'EnableVehicles', 'Enable Vehicles:', row, is_lua=True)
+        row += 1
+        
+        # Car Spawn Rate
+        self.add_choice_setting(scrollable_frame, 'CarSpawnRate', 'Vehicle Spawn Rate:', row, {
+            'None': 1, 'Very Low': 2, 'Low': 3, 'Normal': 4, 'High': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Vehicle Easy Use
+        self.add_bool_setting(scrollable_frame, 'VehicleEasyUse', 'Easy Use (No Keys/Hotwire):', row, is_lua=True)
+        row += 1
+        
+        # Locked Cars
+        self.add_choice_setting(scrollable_frame, 'LockedCar', 'Locked Cars Frequency:', row, {
+            'Never': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4, 'Often': 5, 'Very Often': 6
+        }, is_lua=True)
+        row += 1
+        
+        # Car General Condition
+        self.add_choice_setting(scrollable_frame, 'CarGeneralCondition', 'Vehicle Condition:', row, {
+            'Very Low': 1, 'Low': 2, 'Normal': 3, 'High': 4, 'Very High': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Recently Survivor Vehicles
+        self.add_choice_setting(scrollable_frame, 'RecentlySurvivorVehicles', 'Well-Maintained Vehicles:', row, {
+            'None': 1, 'Low': 2, 'Normal': 3, 'High': 4
+        }, is_lua=True)
+        row += 1
+        
+        # Car Gas Consumption
+        self.add_slider_setting(scrollable_frame, 'CarGasConsumption', 'Gas Consumption:', row, 0, 100, 0.1, is_lua=True)
+        row += 1
+        
+        # Zombie Attraction Multiplier
+        self.add_slider_setting(scrollable_frame, 'ZombieAttractionMultiplier', 'Engine Noise (Zombie Attraction):', row, 0, 100, 0.1, is_lua=True)
+        row += 1
+        
+        # Traffic Jam
+        self.add_bool_setting(scrollable_frame, 'TrafficJam', 'Traffic Jams on Roads:', row, is_lua=True)
+        row += 1
+        
+        # Car Alarm
+        self.add_choice_setting(scrollable_frame, 'CarAlarm', 'Car Alarms Frequency:', row, {
+            'Never': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4, 'Often': 5, 'Very Often': 6
+        }, is_lua=True)
+        row += 1
+        
+        # Siren Shutoff Hours
+        self.add_slider_setting(scrollable_frame, 'SirenShutoffHours', 'Siren Auto-Shutoff (Hours):', row, 0, 168, 1, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="Vehicle Damage Settings", 
+                 font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Car Damage on Impact
+        self.add_choice_setting(scrollable_frame, 'CarDamageOnImpact', 'Damage to Vehicle on Crash:', row, {
+            'Very Low': 1, 'Low': 2, 'Normal': 3, 'High': 4, 'Very High': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Damage to Player from Hit by Car
+        self.add_choice_setting(scrollable_frame, 'DamageToPlayerFromHitByACar', 'Damage to Player Hit by Car:', row, {
+            'None': 1, 'Low': 2, 'Normal': 3, 'High': 4, 'Very High': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Player Damage from Crash
+        self.add_bool_setting(scrollable_frame, 'PlayerDamageFromCrash', 'Player Injured in Crash:', row, is_lua=True)
         row += 1
         
         canvas.pack(side="left", fill="both", expand=True)
@@ -3084,7 +3294,7 @@ class SettingsEditorWindow(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
     
     def add_slider_setting(self, parent, key, label, row, min_val, max_val, step, is_lua=False):
-        """Add a slider setting for decimal values"""
+        """Add a slider setting for decimal values with entry box for precise input"""
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky=tk.W, padx=5, pady=5)
         
         frame = ttk.Frame(parent)
@@ -3096,13 +3306,29 @@ class SettingsEditorWindow(tk.Toplevel):
                          variable=var, length=200)
         scale.pack(side=tk.LEFT, padx=(0, 10))
         
-        value_label = ttk.Label(frame, text=f"{var.get():.1f}")
-        value_label.pack(side=tk.LEFT)
+        # Entry box for precise input
+        entry = ttk.Entry(frame, width=8)
+        entry.insert(0, f"{var.get():.1f}")
+        entry.pack(side=tk.LEFT, padx=5)
         
-        def update_label(*args):
-            value_label.config(text=f"{var.get():.1f}")
+        def update_from_slider(*args):
+            """Update entry when slider moves"""
+            entry.delete(0, tk.END)
+            entry.insert(0, f"{var.get():.1f}")
         
-        var.trace('w', update_label)
+        def update_from_entry(*args):
+            """Update slider when entry changes"""
+            try:
+                value = float(entry.get())
+                # Clamp to min/max
+                value = max(min_val, min(max_val, value))
+                var.set(value)
+            except ValueError:
+                pass  # Invalid input, ignore
+        
+        var.trace('w', update_from_slider)
+        entry.bind('<Return>', update_from_entry)
+        entry.bind('<FocusOut>', update_from_entry)
         
         self.settings[key] = {'widget': scale, 'var': var, 'type': 'slider', 'is_lua': is_lua}
     
