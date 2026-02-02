@@ -678,19 +678,68 @@ Created with ❤️ for the PZ community
                                           font=('TkDefaultFont', 9, 'bold'))
         self.restart_indicator.grid(row=0, column=9, padx=10, pady=5)
         
-        # Server Path Frame
-        path_frame = ttk.LabelFrame(self, text="📁 Server Files (Optional - for Mods/Logs viewing)", padding=15)
+        # Server Files Connection Frame
+        path_frame = ttk.LabelFrame(self, text="📁 Server Files Access", padding=15)
         path_frame.pack(fill=tk.X, padx=15, pady=10)
         
-        ttk.Label(path_frame, text="Server Path:").grid(row=0, column=0, sticky=tk.W)
-        self.path_entry = ttk.Entry(path_frame, textvariable=self.server_path, width=50)
-        self.path_entry.grid(row=0, column=1, padx=5)
-        ttk.Button(path_frame, text="Browse", command=self.browse_path).grid(row=0, column=2, padx=5)
-        ttk.Button(path_frame, text="Auto-Detect", command=self.auto_detect_path).grid(row=0, column=3, padx=5)
+        # Connection type selector
+        ttk.Label(path_frame, text="Connection Type:", font=('TkDefaultFont', 9, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5)
         
-        # Help text for server path
+        self.file_connection_type = tk.StringVar(value='local')
+        ttk.Radiobutton(path_frame, text="💻 Local Files", variable=self.file_connection_type, 
+                       value='local', command=self.toggle_file_connection).grid(row=0, column=1, sticky=tk.W, padx=10, pady=5)
+        ttk.Radiobutton(path_frame, text="🌐 SFTP (Remote Server)", variable=self.file_connection_type, 
+                       value='sftp', command=self.toggle_file_connection).grid(row=0, column=2, sticky=tk.W, padx=10, pady=5)
+        
+        # Local path widgets
+        self.local_path_frame = ttk.Frame(path_frame)
+        self.local_path_frame.grid(row=1, column=0, columnspan=6, sticky='ew', pady=5)
+        
+        ttk.Label(self.local_path_frame, text="Server Path:").grid(row=0, column=0, sticky=tk.W, padx=5)
+        self.path_entry = ttk.Entry(self.local_path_frame, textvariable=self.server_path, width=50)
+        self.path_entry.grid(row=0, column=1, padx=5)
+        ttk.Button(self.local_path_frame, text="Browse", command=self.browse_path).grid(row=0, column=2, padx=5)
+        ttk.Button(self.local_path_frame, text="Auto-Detect", command=self.auto_detect_path).grid(row=0, column=3, padx=5)
+        
         help_text = "Tip: Use the steamcmd install path (e.g., /home/pzserver/.steam/steamapps/common/Project Zomboid Dedicated Server)"
-        ttk.Label(path_frame, text=help_text, font=('TkDefaultFont', 8), foreground='gray').grid(row=1, column=0, columnspan=4, sticky=tk.W, pady=(5, 0))
+        ttk.Label(self.local_path_frame, text=help_text, font=('TkDefaultFont', 8)).grid(row=1, column=0, columnspan=4, sticky=tk.W, pady=(5, 0))
+        
+        # SFTP connection widgets (hidden by default)
+        self.sftp_frame = ttk.Frame(path_frame)
+        self.sftp_frame.grid(row=1, column=0, columnspan=6, sticky='ew', pady=5)
+        self.sftp_frame.grid_remove()  # Hide initially
+        
+        # SFTP connection details
+        ttk.Label(self.sftp_frame, text="Host:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        self.sftp_host = tk.StringVar()
+        ttk.Entry(self.sftp_frame, textvariable=self.sftp_host, width=25).grid(row=0, column=1, padx=5, pady=2)
+        
+        ttk.Label(self.sftp_frame, text="Port:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=2)
+        self.sftp_port = tk.StringVar(value='22')
+        ttk.Entry(self.sftp_frame, textvariable=self.sftp_port, width=8).grid(row=0, column=3, padx=5, pady=2)
+        
+        ttk.Label(self.sftp_frame, text="Username:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
+        self.sftp_username = tk.StringVar()
+        ttk.Entry(self.sftp_frame, textvariable=self.sftp_username, width=25).grid(row=1, column=1, padx=5, pady=2)
+        
+        ttk.Label(self.sftp_frame, text="Password:").grid(row=1, column=2, sticky=tk.W, padx=5, pady=2)
+        self.sftp_password = tk.StringVar()
+        sftp_pass_entry = ttk.Entry(self.sftp_frame, textvariable=self.sftp_password, width=25, show="*")
+        sftp_pass_entry.grid(row=1, column=3, columnspan=2, padx=5, pady=2)
+        
+        ttk.Label(self.sftp_frame, text="Remote Path:").grid(row=2, column=0, sticky=tk.W, padx=5, pady=2)
+        self.sftp_remote_path = tk.StringVar(value='/home/steam/Zomboid')
+        ttk.Entry(self.sftp_frame, textvariable=self.sftp_remote_path, width=50).grid(row=2, column=1, columnspan=4, padx=5, pady=2, sticky='ew')
+        
+        ttk.Button(self.sftp_frame, text="🔗 Test Connection", command=self.test_sftp_connection,
+                  style='Accent.TButton').grid(row=3, column=0, columnspan=2, pady=10, padx=5)
+        
+        self.sftp_status_label = ttk.Label(self.sftp_frame, text="", font=('TkDefaultFont', 8))
+        self.sftp_status_label.grid(row=3, column=2, columnspan=3, pady=10, sticky=tk.W)
+        
+        # SFTP connection object (will be created when needed)
+        self.sftp_client = None
+        self.ssh_client = None
         
         # Notebook for tabs
         self.notebook = ttk.Notebook(self)
@@ -742,6 +791,110 @@ Created with ❤️ for the PZ community
         
         ttk.Button(bottom_frame, text="Refresh All", command=self.refresh_all).pack(side=tk.LEFT, padx=5)
         ttk.Button(bottom_frame, text="Save Config", command=self.save_config).pack(side=tk.RIGHT, padx=5)
+    
+    def toggle_file_connection(self):
+        """Toggle between local and SFTP file access"""
+        connection_type = self.file_connection_type.get()
+        
+        if connection_type == 'local':
+            self.local_path_frame.grid()
+            self.sftp_frame.grid_remove()
+        else:  # sftp
+            self.local_path_frame.grid_remove()
+            self.sftp_frame.grid()
+    
+    def test_sftp_connection(self):
+        """Test SFTP connection to remote server"""
+        try:
+            import paramiko
+        except ImportError:
+            messagebox.showerror("Missing Library", 
+                               "SFTP support requires 'paramiko' library.\n\n"
+                               "Install it with:\n"
+                               "pip install paramiko --break-system-packages\n\n"
+                               "Or on Windows:\n"
+                               "pip install paramiko", parent=self)
+            return
+        
+        host = self.sftp_host.get().strip()
+        port = self.sftp_port.get().strip()
+        username = self.sftp_username.get().strip()
+        password = self.sftp_password.get()
+        remote_path = self.sftp_remote_path.get().strip()
+        
+        if not host or not username:
+            messagebox.showwarning("Missing Info", "Please enter host and username", parent=self)
+            return
+        
+        try:
+            port_num = int(port)
+        except ValueError:
+            messagebox.showerror("Invalid Port", "Port must be a number", parent=self)
+            return
+        
+        self.sftp_status_label.config(text="🔄 Connecting...", foreground="orange")
+        self.update()
+        
+        try:
+            # Close existing connection if any
+            self.close_sftp_connection()
+            
+            # Create SSH client
+            import paramiko
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            # Connect
+            ssh.connect(hostname=host, port=port_num, username=username, password=password, timeout=10)
+            
+            # Open SFTP session
+            sftp = ssh.open_sftp()
+            
+            # Test if remote path exists
+            try:
+                sftp.stat(remote_path)
+                path_exists = True
+            except IOError:
+                path_exists = False
+            
+            # Store connection
+            self.ssh_client = ssh
+            self.sftp_client = sftp
+            
+            if path_exists:
+                self.sftp_status_label.config(text=f"✅ Connected! Path exists.", foreground="green")
+                messagebox.showinfo("Success", 
+                                  f"Successfully connected to {host}!\n\n"
+                                  f"Remote path verified: {remote_path}", parent=self)
+            else:
+                self.sftp_status_label.config(text=f"⚠️ Connected, but path not found", foreground="orange")
+                messagebox.showwarning("Path Not Found", 
+                                      f"Connected successfully, but remote path doesn't exist:\n"
+                                      f"{remote_path}\n\n"
+                                      f"Please check the path.", parent=self)
+            
+        except Exception as e:
+            import traceback
+            error_detail = traceback.format_exc()
+            self.sftp_status_label.config(text="❌ Connection failed", foreground="red")
+            messagebox.showerror("Connection Error", f"Failed to connect:\n{str(e)}", parent=self)
+            print(f"SFTP connection error: {error_detail}")
+    
+    def close_sftp_connection(self):
+        """Close SFTP connection if open"""
+        if self.sftp_client:
+            try:
+                self.sftp_client.close()
+            except:
+                pass
+            self.sftp_client = None
+        
+        if self.ssh_client:
+            try:
+                self.ssh_client.close()
+            except:
+                pass
+            self.ssh_client = None
         
     def create_players_tab(self):
         """Create the players management tab"""
@@ -2724,9 +2877,9 @@ Screen:
         try:
             with open('pz_admin_config.json', 'w') as f:
                 json.dump(config, f, indent=4)
-            messagebox.showinfo("Success", "Configuration saved!")
+            messagebox.showinfo("Success", "Configuration saved!", parent=self)
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save config: {str(e)}")
+            messagebox.showerror("Error", f"Failed to save config: {str(e)}", parent=self)
             
     def load_config(self):
         """Load configuration from file"""
@@ -4678,8 +4831,36 @@ class ModManagerWindow(tk.Toplevel):
         self.title("Mod Manager - Simple Editor")
         self.geometry("900x600")
         
+        # Apply theme from parent
+        if hasattr(parent, 'current_theme'):
+            theme = parent.current_theme.get()
+            if theme == "dark":
+                self.configure(bg="#2b2b2b")
+            else:
+                self.configure(bg="#f5f5f5")
+        
         self.create_ui()
         self.load_mods()
+    
+    def get_text_colors(self):
+        """Get text widget colors based on parent theme"""
+        if hasattr(self.parent, 'current_theme'):
+            theme = self.parent.current_theme.get()
+            if theme == "dark":
+                return {
+                    'bg': "#404040",
+                    'fg': "#ffffff",
+                    'insertbackground': "#ffffff",
+                    'selectbackground': "#505050",
+                    'selectforeground': "#ffffff"
+                }
+        return {
+            'bg': "#ffffff",
+            'fg': "#000000",
+            'insertbackground': "#000000",
+            'selectbackground': "#0078d7",
+            'selectforeground': "#ffffff"
+        }
     
     def create_ui(self):
         """Create the simple mod editor UI"""
@@ -4697,9 +4878,10 @@ class ModManagerWindow(tk.Toplevel):
         left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
         
         ttk.Label(left_frame, text="These are the mod folder names", 
-                 foreground='gray', font=('TkDefaultFont', 8)).pack(anchor=tk.W, pady=(0, 5))
+                 font=('TkDefaultFont', 8)).pack(anchor=tk.W, pady=(0, 5))
         
-        self.mods_text = scrolledtext.ScrolledText(left_frame, wrap=tk.WORD, width=40)
+        text_colors = self.get_text_colors()
+        self.mods_text = scrolledtext.ScrolledText(left_frame, wrap=tk.WORD, width=40, **text_colors)
         self.mods_text.pack(fill=tk.BOTH, expand=True)
         
         # Right panel - Workshop IDs
@@ -4707,9 +4889,9 @@ class ModManagerWindow(tk.Toplevel):
         right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
         
         ttk.Label(right_frame, text="Steam Workshop item numbers", 
-                 foreground='gray', font=('TkDefaultFont', 8)).pack(anchor=tk.W, pady=(0, 5))
+                 font=('TkDefaultFont', 8)).pack(anchor=tk.W, pady=(0, 5))
         
-        self.workshop_text = scrolledtext.ScrolledText(right_frame, wrap=tk.WORD, width=40)
+        self.workshop_text = scrolledtext.ScrolledText(right_frame, wrap=tk.WORD, width=40, **text_colors)
         self.workshop_text.pack(fill=tk.BOTH, expand=True)
         
         # Info label
@@ -4718,16 +4900,16 @@ class ModManagerWindow(tk.Toplevel):
         
         info_text = ("Note: These lists don't align 1:1. One Workshop ID can provide multiple mods.\n"
                     "Leading backslashes (\\) will be added automatically when saving.")
-        ttk.Label(info_frame, text=info_text, foreground='blue', 
+        ttk.Label(info_frame, text=info_text, 
                  font=('TkDefaultFont', 8)).pack(anchor=tk.W)
         
         # Bottom buttons
         btn_frame = ttk.Frame(self)
         btn_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Button(btn_frame, text="Save to Config", 
-                  command=self.save_mods).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Reload from Config", 
+        ttk.Button(btn_frame, text="💾 Save to Config", 
+                  command=self.save_mods, style='Success.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="🔄 Reload from Config", 
                   command=self.load_mods).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Close", 
                   command=self.destroy).pack(side=tk.RIGHT, padx=5)
@@ -4759,7 +4941,7 @@ class ModManagerWindow(tk.Toplevel):
         """Save mods back to ini file"""
         if not messagebox.askyesno("Confirm Save", 
                                    "Save mod changes to server configuration?\n\n"
-                                   "Server must be restarted for changes to take effect."):
+                                   "Server must be restarted for changes to take effect.", parent=self):
             return
         
         try:
@@ -4804,13 +4986,13 @@ class ModManagerWindow(tk.Toplevel):
                                f"Mods saved!\n\n"
                                f"Mods: {len(mods)}\n"
                                f"Workshop IDs: {len(workshop_ids)}\n\n"
-                               f"Backup: {backup.name}")
+                               f"Backup: {backup.name}", parent=self)
             
             if hasattr(self.parent, 'parent') and hasattr(self.parent.parent, 'log_command_output'):
                 self.parent.parent.log_command_output(f"Mods configuration saved. Backup: {timestamp}")
             
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save mods: {str(e)}")
+            messagebox.showerror("Error", f"Failed to save mods: {str(e)}", parent=self)
 
 
 class RawFileViewer(tk.Toplevel):
