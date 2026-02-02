@@ -4829,7 +4829,7 @@ class ModManagerWindow(tk.Toplevel):
         self.server_path = Path(server_path)
         
         self.title("Mod Manager - Simple Editor")
-        self.geometry("900x600")
+        self.geometry("1000x700")  # Increased from 900x600
         
         # Apply theme from parent
         if hasattr(parent, 'current_theme'):
@@ -4880,6 +4880,19 @@ class ModManagerWindow(tk.Toplevel):
         ttk.Label(left_frame, text="These are the mod folder names", 
                  font=('TkDefaultFont', 8)).pack(anchor=tk.W, pady=(0, 5))
         
+        # Search bar for mods
+        search_mod_frame = ttk.Frame(left_frame)
+        search_mod_frame.pack(fill=tk.X, pady=(0, 5))
+        
+        ttk.Label(search_mod_frame, text="🔍 Search:", font=('TkDefaultFont', 8)).pack(side=tk.LEFT, padx=(0, 5))
+        self.mod_search_var = tk.StringVar()
+        self.mod_search_var.trace('w', lambda *args: self.search_mods())
+        mod_search_entry = ttk.Entry(search_mod_frame, textvariable=self.mod_search_var, width=30)
+        mod_search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        self.mod_search_label = ttk.Label(search_mod_frame, text="", font=('TkDefaultFont', 8))
+        self.mod_search_label.pack(side=tk.LEFT, padx=(5, 0))
+        
         text_colors = self.get_text_colors()
         self.mods_text = scrolledtext.ScrolledText(left_frame, wrap=tk.WORD, width=40, **text_colors)
         self.mods_text.pack(fill=tk.BOTH, expand=True)
@@ -4890,6 +4903,19 @@ class ModManagerWindow(tk.Toplevel):
         
         ttk.Label(right_frame, text="Steam Workshop item numbers", 
                  font=('TkDefaultFont', 8)).pack(anchor=tk.W, pady=(0, 5))
+        
+        # Search bar for workshop IDs
+        search_workshop_frame = ttk.Frame(right_frame)
+        search_workshop_frame.pack(fill=tk.X, pady=(0, 5))
+        
+        ttk.Label(search_workshop_frame, text="🔍 Search:", font=('TkDefaultFont', 8)).pack(side=tk.LEFT, padx=(0, 5))
+        self.workshop_search_var = tk.StringVar()
+        self.workshop_search_var.trace('w', lambda *args: self.search_workshop())
+        workshop_search_entry = ttk.Entry(search_workshop_frame, textvariable=self.workshop_search_var, width=30)
+        workshop_search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        self.workshop_search_label = ttk.Label(search_workshop_frame, text="", font=('TkDefaultFont', 8))
+        self.workshop_search_label.pack(side=tk.LEFT, padx=(5, 0))
         
         self.workshop_text = scrolledtext.ScrolledText(right_frame, wrap=tk.WORD, width=40, **text_colors)
         self.workshop_text.pack(fill=tk.BOTH, expand=True)
@@ -4913,6 +4939,92 @@ class ModManagerWindow(tk.Toplevel):
                   command=self.load_mods).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Close", 
                   command=self.destroy).pack(side=tk.RIGHT, padx=5)
+    
+    def search_mods(self):
+        """Search and highlight matching mod IDs"""
+        search_term = self.mod_search_var.get().strip().lower()
+        
+        # Remove previous tags
+        self.mods_text.tag_remove('search', '1.0', tk.END)
+        
+        if not search_term:
+            self.mod_search_label.config(text="", foreground="")
+            return
+        
+        # Get all text
+        content = self.mods_text.get('1.0', tk.END)
+        lines = content.split('\n')
+        
+        # Find matches
+        matches = []
+        for i, line in enumerate(lines, 1):
+            if search_term in line.lower():
+                matches.append(i)
+        
+        # Highlight matches
+        if matches:
+            # Configure highlight tag
+            if hasattr(self.parent, 'current_theme') and self.parent.current_theme.get() == 'dark':
+                self.mods_text.tag_config('search', background='#ffa500', foreground='#000000')
+            else:
+                self.mods_text.tag_config('search', background='#ffff00', foreground='#000000')
+            
+            # Highlight each matching line
+            for line_num in matches:
+                start = f"{line_num}.0"
+                end = f"{line_num}.end"
+                self.mods_text.tag_add('search', start, end)
+            
+            # Scroll to first match
+            self.mods_text.see(f"{matches[0]}.0")
+            
+            # Update label
+            self.mod_search_label.config(text=f"✅ {len(matches)} found", foreground="green")
+        else:
+            self.mod_search_label.config(text="❌ Not found", foreground="red")
+    
+    def search_workshop(self):
+        """Search and highlight matching workshop IDs"""
+        search_term = self.workshop_search_var.get().strip().lower()
+        
+        # Remove previous tags
+        self.workshop_text.tag_remove('search', '1.0', tk.END)
+        
+        if not search_term:
+            self.workshop_search_label.config(text="", foreground="")
+            return
+        
+        # Get all text
+        content = self.workshop_text.get('1.0', tk.END)
+        lines = content.split('\n')
+        
+        # Find matches
+        matches = []
+        for i, line in enumerate(lines, 1):
+            if search_term in line.lower():
+                matches.append(i)
+        
+        # Highlight matches
+        if matches:
+            # Configure highlight tag
+            if hasattr(self.parent, 'current_theme') and self.parent.current_theme.get() == 'dark':
+                self.workshop_text.tag_config('search', background='#ffa500', foreground='#000000')
+            else:
+                self.workshop_text.tag_config('search', background='#ffff00', foreground='#000000')
+            
+            # Highlight each matching line
+            for line_num in matches:
+                start = f"{line_num}.0"
+                end = f"{line_num}.end"
+                self.workshop_text.tag_add('search', start, end)
+            
+            # Scroll to first match
+            self.workshop_text.see(f"{matches[0]}.0")
+            
+            # Update label
+            self.workshop_search_label.config(text=f"✅ {len(matches)} found", foreground="green")
+        else:
+            self.workshop_search_label.config(text="❌ Not found", foreground="red")
     
     def load_mods(self):
         """Load current mods from ini file"""
