@@ -57,3 +57,4 @@ minimal_rcon_test.py
 *.tmp
 *.bak
 *.backup
+GITHUB_UPLOAD_INSTRUCTIONS.md

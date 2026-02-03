@@ -691,6 +691,41 @@ Created with ❤️ for the PZ community
         ttk.Radiobutton(path_frame, text="🌐 SFTP (Remote Server)", variable=self.file_connection_type, 
                        value='sftp', command=self.toggle_file_connection).grid(row=0, column=2, sticky=tk.W, padx=10, pady=5)
         
+        # PZ Version selector
+        version_selector_frame = ttk.Frame(path_frame)
+        version_selector_frame.grid(row=0, column=3, columnspan=3, sticky=tk.E, padx=20)
+        
+        ttk.Label(version_selector_frame, text="PZ Build:", font=('TkDefaultFont', 9, 'bold')).pack(side=tk.LEFT, padx=(0, 5))
+        
+        self.pz_version = tk.StringVar(value='build42')
+        version_combo = ttk.Combobox(version_selector_frame, textvariable=self.pz_version, 
+                                     values=['build41', 'build42'], 
+                                     state='readonly', width=15)
+        version_combo.pack(side=tk.LEFT, padx=5)
+        
+        # Custom display for versions
+        version_combo.set('Build 42 (Unstable)')
+        
+        # Bind to show warning
+        def on_version_change(*args):
+            selected = self.pz_version.get()
+            if selected == 'build41':
+                version_combo.set('Build 41 (Stable)')
+                messagebox.showinfo("Build Version Changed",
+                                  "⚠️ Build 41 (Stable) Selected\n\n"
+                                  "Note: Settings, mods, and server structure differ between builds.\n"
+                                  "Ensure your server files match Build 41.", parent=self)
+            else:
+                version_combo.set('Build 42 (Unstable)')
+        
+        version_combo.bind('<<ComboboxSelected>>', on_version_change)
+        
+        # Warning label
+        version_warning = ttk.Label(path_frame, 
+                                   text="⚠️ Tool configured for Build 42 (Unstable 42.13.2) - Settings vary by build!",
+                                   font=('TkDefaultFont', 8), foreground='orange')
+        version_warning.grid(row=0, column=6, sticky=tk.W, padx=10, pady=5)
+        
         # Local path widgets
         self.local_path_frame = ttk.Frame(path_frame)
         self.local_path_frame.grid(row=1, column=0, columnspan=6, sticky='ew', pady=5)
@@ -2871,7 +2906,8 @@ Screen:
             'host': self.host_entry.get(),
             'port': self.port_entry.get(),
             'password': self.password_entry.get(),
-            'server_path': self.server_path.get()
+            'server_path': self.server_path.get(),
+            'pz_version': self.pz_version.get()
         }
         
         try:
@@ -2898,6 +2934,10 @@ Screen:
                 self.password_entry.insert(0, config.get('password', ''))
                 
                 self.server_path.set(config.get('server_path', ''))
+                
+                # Load PZ version (default to build42)
+                pz_ver = config.get('pz_version', 'build42')
+                self.pz_version.set(pz_ver)
         except (IOError, OSError, json.JSONDecodeError):
             pass  # Use defaults if can't load config
     
@@ -3202,6 +3242,11 @@ class SettingsEditorWindow(tk.Toplevel):
         notebook.add(combat_frame, text="Combat & Meta")
         self.create_combat_settings(combat_frame)
         
+        # Animals & Nature (Build 42 Features)
+        nature_frame = ttk.Frame(notebook)
+        notebook.add(nature_frame, text="🐄 Animals & Nature")
+        self.create_nature_settings(nature_frame)
+        
         # Buttons at bottom
         btn_frame = ttk.Frame(self)
         btn_frame.pack(fill=tk.X, padx=10, pady=10)
@@ -3291,6 +3336,13 @@ class SettingsEditorWindow(tk.Toplevel):
         self.add_number_setting(scrollable_frame, 'StartDay', 'Start Day:', row, 1, 31, is_lua=True)
         row += 1
         
+        # Start Year
+        self.add_choice_setting(scrollable_frame, 'StartYear', 'Start Year:', row, {
+            '1993': 1, '1994': 2, '1995': 3, '1996': 4, '1997': 5,
+            '1998': 6, '1999': 7, '2000': 8
+        }, is_lua=True)
+        row += 1
+        
         # Start Time
         self.add_choice_setting(scrollable_frame, 'StartTime', 'Start Time:', row, {
             '7 AM': 1, '9 AM': 2, '12 PM': 3, '2 PM': 4,
@@ -3305,6 +3357,9 @@ class SettingsEditorWindow(tk.Toplevel):
         }, is_lua=True)
         row += 1
         
+        self.add_slider_setting(scrollable_frame, 'WaterShutModifier', 'Water Shut Modifier (days):', row, 0, 30, 1, is_lua=True)
+        row += 1
+        
         # Electricity Shutoff
         self.add_choice_setting(scrollable_frame, 'ElecShut', 'Electricity Shutoff:', row, {
             'Instant': 1, '0-30 Days': 2, '0-2 Months': 3, '0-6 Months': 4,
@@ -3312,9 +3367,13 @@ class SettingsEditorWindow(tk.Toplevel):
         }, is_lua=True)
         row += 1
         
-        # Loot Respawn
-        self.add_bool_setting(scrollable_frame, 'LootRespawn', 'Loot Respawn:', row, is_lua=True)
+        self.add_slider_setting(scrollable_frame, 'ElecShutModifier', 'Elec Shut Modifier (days):', row, 0, 30, 1, is_lua=True)
         row += 1
+        
+        # Loot Respawn
+        # LootRespawn removed - doesn't exist in Build 42
+        # Use HoursForLootRespawn instead
+        
         
         # Loot Abundance
         self.add_choice_setting(scrollable_frame, 'LootAbundance', 'Loot Abundance:', row, {
@@ -3590,6 +3649,30 @@ class SettingsEditorWindow(tk.Toplevel):
         canvas.configure(yscrollcommand=scrollbar.set)
         
         row = 0
+        
+        ttk.Label(scrollable_frame, text="🆕 Build 42 Loot System",
+                 font=('TkDefaultFont', 10, 'bold'), foreground='green').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=10)
+        row += 1
+        
+        # Hours For Loot Respawn (Build 42)
+        self.add_slider_setting(scrollable_frame, 'HoursForLootRespawn', 'Hours For Loot Respawn:', row, 0, 2000, 1, is_lua=True)
+        row += 1
+        
+        # Loot Rarity Multipliers (Build 42)
+        ttk.Label(scrollable_frame, text="Loot Rarity Multipliers:", font=('TkDefaultFont', 9)).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        self.add_slider_setting(scrollable_frame, 'ExtremeLootFactor', 'Extreme Rarity Factor:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'RareLootFactor', 'Rare Factor:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'CommonLootFactor', 'Common Factor:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'AbundantLootFactor', 'Abundant Factor:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
         
         ttk.Label(scrollable_frame, text="Loot Abundance by Category (0.0 = None, 4.0 = Maximum)",
                  font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=10)
@@ -3968,29 +4051,10 @@ class SettingsEditorWindow(tk.Toplevel):
                  font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
         row += 1
         
-        # Melee Weapon Condition Lower Chance
-        self.add_slider_setting(scrollable_frame, 'MeleeWeaponConditionLowerChance', 'Melee Weapon Degradation:', row, 0, 50, 1, is_lua=True)
-        row += 1
-        
-        # Melee Weapon Damage
-        self.add_slider_setting(scrollable_frame, 'MeleeWeaponDamage', 'Melee Weapon Damage:', row, 0, 10, 0.1, is_lua=True)
-        row += 1
-        
-        # Firearm Damage
-        self.add_slider_setting(scrollable_frame, 'FirearmDamage', 'Firearm Damage:', row, 0, 10, 0.1, is_lua=True)
-        row += 1
-        
-        # Base Firearm Recoil
-        self.add_slider_setting(scrollable_frame, 'BaseFirearmRecoil', 'Firearm Recoil:', row, 0, 10, 0.1, is_lua=True)
-        row += 1
-        
-        # Recoil Delay
-        self.add_slider_setting(scrollable_frame, 'RecoilDelay', 'Recoil Recovery Delay:', row, 0, 50, 1, is_lua=True)
-        row += 1
-        
-        # Aim Time
-        self.add_slider_setting(scrollable_frame, 'AimTime', 'Aiming Time Modifier:', row, 0, 10, 0.1, is_lua=True)
-        row += 1
+        # Invalid Build 41 settings removed:
+        # MeleeWeaponConditionLowerChance, MeleeWeaponDamage, FirearmDamage
+        # BaseFirearmRecoil, RecoilDelay, AimTime
+        # These don't exist in Build 42
         
         # Multi-Hit Zombies
         self.add_bool_setting(scrollable_frame, 'MultiHitZombies', 'Multi-Hit Zombies:', row, is_lua=True)
@@ -4009,13 +4073,10 @@ class SettingsEditorWindow(tk.Toplevel):
                  font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
         row += 1
         
-        # Zombies Hours
-        self.add_slider_setting(scrollable_frame, 'ZombiesHours', 'Hours Before Zombie Respawn:', row, 0, 1000, 10, is_lua=True)
-        row += 1
-        
-        # Zombies Respawn Percent
-        self.add_slider_setting(scrollable_frame, 'ZombiesRespawnPercent', 'Zombie Respawn %:', row, 0, 100, 1, is_lua=True)
-        row += 1
+        # Invalid settings removed (don't exist in Build 42):
+        # - ZombiesHours
+        # - ZombiesRespawnPercent  
+        # Build 42 uses different respawn mechanics
         
         # Respawn Unseen Hours
         self.add_slider_setting(scrollable_frame, 'RespawnUnseenHours', 'Hours Unseen Before Respawn:', row, 0, 100, 1, is_lua=True)
@@ -4050,9 +4111,7 @@ class SettingsEditorWindow(tk.Toplevel):
         }, is_lua=True)
         row += 1
         
-        # Proper Zombies
-        self.add_slider_setting(scrollable_frame, 'ProperZombies', 'Proper Zombie Count:', row, 0, 5000, 50, is_lua=True)
-        row += 1
+        # ProperZombies removed - doesn't exist in Build 42
         
         # RallyGroup Size
         self.add_slider_setting(scrollable_frame, 'RallyGroupSize', 'Rally Group Size:', row, 0, 1000, 10, is_lua=True)
@@ -4068,6 +4127,238 @@ class SettingsEditorWindow(tk.Toplevel):
         
         # Rally Group Radius
         self.add_slider_setting(scrollable_frame, 'RallyGroupRadius', 'Rally Group Radius:', row, 0, 100, 1, is_lua=True)
+        row += 1
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
+    def create_nature_settings(self, parent):
+        """Create animals and nature settings (Build 42 features)"""
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        row = 0
+        
+        # Build 42 indicator
+        ttk.Label(scrollable_frame, text="🆕 Build 42 Features - Animals & Nature", 
+                 font=('TkDefaultFont', 11, 'bold'), foreground='green').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="Note: These settings are specific to Build 42 (Unstable). They may not work or exist in Build 41.", 
+                 font=('TkDefaultFont', 8), foreground='orange').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 10))
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="Animal Settings", 
+                 font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Animal Stats Modifier
+        self.add_choice_setting(scrollable_frame, 'AnimalStatsModifier', 'Animal Stats Decay Speed:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Animal Meta Stats Modifier
+        self.add_choice_setting(scrollable_frame, 'AnimalMetaStatsModifier', 'Animal Stats in Meta:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Animal Pregnancy Time
+        self.add_choice_setting(scrollable_frame, 'AnimalPregnancyTime', 'Pregnancy Duration:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Animal Age Modifier
+        self.add_choice_setting(scrollable_frame, 'AnimalAgeModifier', 'Animal Aging Speed:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Animal Milk Production
+        self.add_choice_setting(scrollable_frame, 'AnimalMilkIncModifier', 'Milk Production Speed:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Animal Wool Production
+        self.add_choice_setting(scrollable_frame, 'AnimalWoolIncModifier', 'Wool Growth Speed:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Animal Ranch Chance
+        self.add_choice_setting(scrollable_frame, 'AnimalRanchChance', 'Farm Animal Spawn Chance:', row, {
+            'Never': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4, 'Often': 5, 'Very Often': 6, 'Always': 7
+        }, is_lua=True)
+        row += 1
+        
+        # Grass Regrow Time
+        self.add_number_setting(scrollable_frame, 'AnimalGrassRegrowTime', 'Grass Regrow Time (hours):', row, 1, 9999, is_lua=True)
+        row += 1
+        
+        # Animal Meta Predator
+        self.add_bool_setting(scrollable_frame, 'AnimalMetaPredator', 'Predators Active in Meta:', row, is_lua=True)
+        row += 1
+        
+        # Animal Mating Season
+        self.add_bool_setting(scrollable_frame, 'AnimalMatingSeason', 'Respect Mating Seasons:', row, is_lua=True)
+        row += 1
+        
+        # Animal Egg Hatch Time
+        self.add_choice_setting(scrollable_frame, 'AnimalEggHatch', 'Egg Hatching Speed:', row, {
+            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
+        }, is_lua=True)
+        row += 1
+        
+        # Animal Sounds Attract Zombies
+        self.add_bool_setting(scrollable_frame, 'AnimalSoundAttractZombies', 'Animal Calls Attract Zombies:', row, is_lua=True)
+        row += 1
+        
+        # Animal Track Chance
+        self.add_choice_setting(scrollable_frame, 'AnimalTrackChance', 'Animal Track Frequency:', row, {
+            'Never': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4, 'Often': 5, 'Very Often': 6, 'Always': 7
+        }, is_lua=True)
+        row += 1
+        
+        # Animal Path Chance
+        self.add_choice_setting(scrollable_frame, 'AnimalPathChance', 'Hunting Path Frequency:', row, {
+            'Never': 1, 'Extremely Rare': 2, 'Rare': 3, 'Sometimes': 4, 'Often': 5, 'Very Often': 6, 'Always': 7
+        }, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="Fishing", 
+                 font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Fish Abundance
+        self.add_choice_setting(scrollable_frame, 'FishAbundance', 'Fish Abundance:', row, {
+            'Very Poor': 1, 'Poor': 2, 'Normal': 3, 'Abundant': 4, 'Very Abundant': 5
+        }, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="Nutrition System", 
+                 font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Nutrition System
+        self.add_bool_setting(scrollable_frame, 'Nutrition', 'Enable Nutrition System:', row, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="🆕 Skill XP Multipliers (Build 42)", 
+                 font=('TkDefaultFont', 10, 'bold'), foreground='green').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="⚠️ CRITICAL: Use EXACT variable names from Build 42. Variable names ≠ in-game skill names!", 
+                 font=('TkDefaultFont', 8, 'bold'), foreground='red').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 5))
+        row += 1
+        
+        # Physical/Movement Skills
+        ttk.Label(scrollable_frame, text="Physical & Movement:", font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Fitness', 'Fitness:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Strength', 'Strength:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Sprinting', 'Sprinting:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Lightfoot', 'Lightfoot (Lightfooted):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Nimble', 'Nimble:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Sneak', 'Sneak (Sneaking):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        
+        # Weapon Skills
+        ttk.Label(scrollable_frame, text="Weapon Skills:", font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Axe', 'Axe:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Blunt', 'Blunt (Long Blunt):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'SmallBlunt', 'SmallBlunt (Short Blunt):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'LongBlade', 'LongBlade (Long Blade):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'SmallBlade', 'SmallBlade (Short Blade):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Spear', 'Spear:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Maintenance', 'Maintenance:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Aiming', 'Aiming:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Reloading', 'Reloading:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        
+        # Crafting/Building Skills
+        ttk.Label(scrollable_frame, text="Crafting & Building:", font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Woodwork', 'Woodwork (Carpentry):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Cooking', 'Cooking:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Doctor', 'Doctor (First Aid):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Electricity', 'Electricity (Electrical):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'MetalWelding', 'MetalWelding (Welding/Metalworking):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Mechanics', 'Mechanics:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Tailoring', 'Tailoring:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Blacksmith', 'Blacksmith (Blacksmithing):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Pottery', 'Pottery:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Carving', 'Carving:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Masonry', 'Masonry:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'FlintKnapping', 'FlintKnapping (Knapping):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Glassmaking', 'Glassmaking:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        
+        # Survival/Gathering Skills
+        ttk.Label(scrollable_frame, text="Survival & Gathering:", font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Farming', 'Farming (Agriculture):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Fishing', 'Fishing:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Trapping', 'Trapping:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'PlantScavenging', 'PlantScavenging (Foraging):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Butchering', 'Butchering:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Husbandry', 'Husbandry (Animal Care):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Tracking', 'Tracking:', row, 0.01, 1000, 0.1, is_lua=True)
         row += 1
         
         canvas.pack(side="left", fill="both", expand=True)

@@ -1,0 +1,294 @@
+UNIVERSAL SETTINGS (Both Builds):
+================================================================================
+ActiveOnly | B41: 1 | B42: 1
+Alarm | B41: 4 | B42: 4
+AllClothesUnlocked | B41: false | B42: false
+AllowExteriorGenerator | B41: true | B42: true
+AllowMiniMap | B41: false | B42: false
+AllowWorldMap | B41: true | B42: true
+AnnotatedMapChance | B41: 4 | B42: 4
+AttackBlockMovements | B41: true | B42: true
+BloodLevel | B41: 3 | B42: 3
+BoneFracture | B41: true | B42: true
+CarAlarm | B41: 2 | B42: 2
+CarDamageOnImpact | B41: 3 | B42: 3
+CarGasConsumption | B41: 1.0 | B42: 1.0
+CarGeneralCondition | B41: 2 | B42: 2
+CarSpawnRate | B41: 3 | B42: 3
+ChanceHasGas | B41: 1 | B42: 1
+CharacterFreePoints | B41: 0 | B42: 0
+ClothingDegradation | B41: 3 | B42: 3
+Cognition | B41: 3 | B42: 3
+CompostTime | B41: 2 | B42: 2
+ConstructionBonusPoints | B41: 3 | B42: 3
+CrawlUnderVehicle | B41: 5 | B42: 5
+DamageToPlayerFromHitByACar | B41: 1 | B42: 1
+DayLength | B41: 3 | B42: 4
+DaysForRottenFoodRemoval | B41: -1 | B42: -1
+DecayingCorpseHealthImpact | B41: 3 | B42: 3
+DisableFakeDead | B41: 1 | B42: 1
+Distribution | B41: 1 | B42: 1
+ElecShut | B41: 2 | B42: 2
+ElecShutModifier | B41: 14 | B42: 14
+EnablePoisoning | B41: 1 | B42: 1
+EnableSnowOnGround | B41: true | B42: true
+EnableTaintedWaterText | B41: true | B42: true
+EnableVehicles | B41: true | B42: true
+EndRegen | B41: 3 | B42: 3
+ErosionDays | B41: 0 | B42: 0
+ErosionSpeed | B41: 3 | B42: 3
+Farming | B41: 3 | B42: 1.0
+FireSpread | B41: true | B42: true
+FollowSoundDistance | B41: 100 | B42: 100
+FoodRotSpeed | B41: 3 | B42: 3
+FridgeFactor | B41: 3 | B42: 3
+GeneratorFuelConsumption | B41: 1.0 | B42: 0.1
+GeneratorSpawning | B41: 3 | B42: 4
+Hearing | B41: 2 | B42: 5
+Helicopter | B41: 2 | B42: 2
+HoursForCorpseRemoval | B41: 216.0 | B42: 216.0
+HoursForWorldItemRemoval | B41: 24.0 | B42: 24.0
+InitialGas | B41: 2 | B42: 2
+InjurySeverity | B41: 2 | B42: 2
+ItemRemovalListBlacklistToggle | B41: false | B42: false
+LightBulbLifespan | B41: 1.0 | B42: 1.0
+LockedCar | B41: 3 | B42: 3
+LockedHouses | B41: 6 | B42: 6
+MaggotSpawn | B41: 1 | B42: 1
+Map | B41: { | B42: {
+MapAllKnown | B41: false | B42: false
+MaxFogIntensity | B41: 1 | B42: 1
+MaxRainFxIntensity | B41: 1 | B42: 1
+Memory | B41: 2 | B42: 2
+MetaEvent | B41: 2 | B42: 2
+Mortality | B41: 5 | B42: 5
+MultiHitZombies | B41: false | B42: false
+NatureAbundance | B41: 3 | B42: 3
+NightDarkness | B41: 3 | B42: 3
+NightLength | B41: 3 | B42: 3
+Nutrition | B41: true | B42: true
+PlantAbundance | B41: 3 | B42: 3
+PlantResilience | B41: 3 | B42: 3
+PlayerDamageFromCrash | B41: true | B42: true
+PopulationMultiplier | B41: 1.0 | B42: 0.65
+PopulationPeakDay | B41: 28 | B42: 28
+PopulationPeakMultiplier | B41: 1.5 | B42: 1.5
+PopulationStartMultiplier | B41: 1.0 | B42: 1.0
+Rain | B41: 3 | B42: 3
+RallyGroupRadius | B41: 3 | B42: 3
+RallyGroupSeparation | B41: 15 | B42: 15
+RallyGroupSize | B41: 20 | B42: 20
+RallyTravelDistance | B41: 20 | B42: 20
+Reanimate | B41: 3 | B42: 3
+RearVulnerability | B41: 3 | B42: 3
+RecentlySurvivorVehicles | B41: 2 | B42: 2
+RedistributeHours | B41: 12.0 | B42: 12.0
+RespawnHours | B41: 72.0 | B42: 72.0
+RespawnMultiplier | B41: 0.1 | B42: 0.1
+RespawnUnseenHours | B41: 16.0 | B42: 16.0
+SeenHoursPreventLootRespawn | B41: 0 | B42: 0
+Sight | B41: 2 | B42: 5
+SirenShutoffHours | B41: 0.0 | B42: 0.0
+SleepingEvent | B41: 1 | B42: 1
+Speed | B41: 2 | B42: 2
+StartDay | B41: 9 | B42: 9
+StartMonth | B41: 7 | B42: 7
+StartTime | B41: 2 | B42: 2
+StartYear | B41: 1 | B42: 1
+StarterKit | B41: false | B42: false
+StatsDecrease | B41: 3 | B42: 3
+Strength | B41: 2 | B42: 1.0
+SurvivorHouseChance | B41: 3 | B42: 3
+Temperature | B41: 3 | B42: 3
+ThumpNoChasing | B41: false | B42: false
+ThumpOnConstruction | B41: true | B42: true
+TimeSinceApo | B41: 1 | B42: 1
+Toughness | B41: 2 | B42: 4
+TrafficJam | B41: true | B42: true
+Transmission | B41: 1 | B42: 1
+TriggerHouseAlarm | B41: false | B42: false
+VERSION | B41: 5 | B42: 6
+VehicleEasyUse | B41: false | B42: false
+VehicleStoryChance | B41: 3 | B42: 3
+WaterShut | B41: 2 | B42: 2
+WaterShutModifier | B41: 14 | B42: 14
+WorldItemRemovalList | B41: "Base.Hat | B42: "Base.Hat
+ZombieAttractionMultiplier | B41: 1.0 | B42: 1.0
+ZombieConfig | B41: { | B42: {
+ZombieLore | B41: { | B42: {
+Zombies | B41: 4 | B42: 4
+ZombiesDragDown | B41: true | B42: true
+ZombiesFenceLunge | B41: true | B42: true
+ZoneStoryChance | B41: 3 | B42: 3
+
+
+BUILD 42 ONLY SETTINGS:
+================================================================================
+AbundantLootFactor = 3.0
+Aiming = 1.0
+AlarmDecay = 2
+AlarmDecayModifier = 14
+AmmoLootNew = 0.6
+AnimalAgeModifier = 3
+AnimalEggHatch = 3
+AnimalGrassRegrowTime = 240
+AnimalMatingSeason = true
+AnimalMetaPredator = false
+AnimalMetaStatsModifier = 4
+AnimalMilkIncModifier = 3
+AnimalPathChance = 4
+AnimalPregnancyTime = 2
+AnimalRanchChance = 7
+AnimalSoundAttractZombies = false
+AnimalStatsModifier = 4
+AnimalTrackChance = 4
+AnimalWoolIncModifier = 3
+Axe = 1.0
+Basement = {
+Blacksmith = 1.0
+BloodSplatLifespanDays = 0
+Blunt = 1.0
+Butchering = 1.0
+CannedFoodLootNew = 0.6
+Carving = 1.0
+ChanceOfAttachedWeapon = 6
+ClayLakeChance = 0.05
+ClayRiverChance = 0.05
+ClimateCycle = 1
+ClothingLootNew = 0.6
+CommonLootFactor = 2.0
+ConstructionPreventsLootRespawn = true
+ContainerLootNew = 0.6
+Cooking = 1.0
+CookwareLootNew = 0.6
+DayNightCycle = 1
+DaysUntilMaximumDiminishedLoot = 3650
+DaysUntilMaximumLooted = 90
+DaysUntilMaximumRatIndex = 90
+DiscomfortFactor = 1.0
+Doctor = 1.0
+EasyClimbing = false
+Electricity = 1.0
+ExtremeLootFactor = 0.2
+FarmingAmountNew = 1.0
+FarmingLootNew = 0.6
+FarmingSpeedNew = 1.0
+FenceDamageMultiplier = 1.0
+FenceThumpersRequired = 50
+FirearmHeadGearEffect = true
+FirearmJamMultiplier = 0.0
+FirearmMoodleMultiplier = 1.0
+FirearmNoiseMultiplier = 1.0
+FirearmUseDamageChance = true
+FirearmWeatherMultiplier = 1.0
+FishAbundance = 3
+Fishing = 1.0
+Fitness = 1.0
+FlintKnapping = 1.0
+FogCycle = 1
+FoodLootNew = 0.6
+FuelStationGasEmptyChance = 20
+FuelStationGasInfinite = false
+FuelStationGasMax = 0.7
+FuelStationGasMin = 0.0
+GeneratorTileRange = 20
+GeneratorVerticalPowerRange = 3
+Glassmaking = 1.0
+Global = 1.0
+GlobalToggle = true
+HoursForLootRespawn = 0
+Husbandry = 1.0
+InsaneLootFactor = 0.05
+KeyLootNew = 0.6
+KillInsideCrops = true
+LevelForDismantleXPCutoff = 0
+LevelForMediaXPCutoff = 3
+Lightfoot = 1.0
+LiteratureCooldown = 90
+LiteratureLootNew = 0.6
+LongBlade = 1.0
+LootItemRemovalList = ""
+Maintenance = 1.0
+MapNeedsLight = true
+Masonry = 1.0
+MaterialLootNew = 0.6
+MaxItemsForLootRespawn = 5
+MaximumDiminishedLoot = 0
+MaximumFireFuelHours = 8
+MaximumLooted = 50
+MaximumLootedBuildingRooms = 50
+MaximumRatIndex = 25
+Mechanics = 1.0
+MechanicsLootNew = 0.6
+MediaLootNew = 0.6
+MedicalLootNew = 0.6
+MementoLootNew = 0.6
+MetaKnowledge = 3
+MetalWelding = 1.0
+MinutesPerPage = 2.0
+MultiplierConfig = {
+MuscleStrainFactor = 1.0
+NegativeTraitsPenalty = 1
+Nimble = 1.0
+NoBlackClothes = true
+NormalLootFactor = 1.0
+OtherLootNew = 0.6
+PlaceDirtAboveground = false
+PlantGrowingSeasons = true
+PlantScavenging = 1.0
+PlayerSpawnZombieRemoval = 1
+Pottery = 1.0
+RallyGroupSizeVariance = 50
+RangedWeaponLootNew = 0.6
+RareLootFactor = 0.6
+Reloading = 1.0
+RemoveStoryLoot = false
+RemoveZombieLoot = false
+RollsMultiplier = 1.0
+RuralLooted = 0.5
+SeeNotLearntRecipe = true
+SirenEffectsZombies = true
+SmallBlade = 1.0
+SmallBlunt = 1.0
+Sneak = 1.0
+SpawnFrequency = 4
+Spear = 1.0
+SpottedLogic = true
+SprinterPercentage = 0
+Sprinting = 1.0
+SurvivalGearsLootNew = 0.6
+Tailoring = 1.0
+ToolLootNew = 0.6
+Tracking = 1.0
+Trapping = 1.0
+WeaponLootNew = 0.6
+Woodwork = 1.0
+WoundInfectionFactor = 0.0
+ZombieHealthImpact = false
+ZombieMigrate = true
+ZombiePopLootEffect = 10
+ZombieRespawn = 2
+ZombieVoronoiNoise = true
+ZombiesArmorFactor = 2.0
+ZombiesCountBeforeDelete = 300
+ZombiesCrawlersDragDown = false
+ZombiesFallDamage = 1.0
+ZombiesMaxDefense = 85
+
+
+BUILD 41 ONLY SETTINGS:
+================================================================================
+AmmoLoot = 4
+CannedFoodLoot = 4
+FoodLoot = 4
+FuelStationGas = 5
+LiteratureLoot = 4
+LootRespawn = 1
+MechanicsLoot = 4
+MedicalLoot = 4
+OtherLoot = 4
+RangedWeaponLoot = 4
+SurvivalGearsLoot = 4
+WeaponLoot = 4
+XpMultiplier = 1.0
+XpMultiplierAffectsPassive = false
