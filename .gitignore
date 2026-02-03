@@ -4,31 +4,11 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Config files (may contain passwords)
-pz_admin_config.json
-*.ini
-*.cfg
-
-# Virtual Environment
+# Virtual environments
 venv/
-ENV/
 env/
+ENV/
 
 # IDE
 .vscode/
@@ -41,25 +21,11 @@ env/
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-# Testing/Development files
-test_*.py
-debug_*.py
-*_test.py
-rcon_test.py
-password_checker.py
-show_rcon_response.py
-minimal_rcon_test.py
-
-# Temporary files
-*.tmp
-*.bak
-*.backup
-GITHUB_UPLOAD_INSTRUCTIONS.md
-BLANK_SETTINGS_FIX_COMPLETE.md
-GITHUB_PUSH_v2.1.0.md
-NEXT_SESSION_QUICK_START.md
-PRESET_FIX_v2.2.0.md
-PUSH_BOTH_VERSIONS
+# Project specific - generated files
+preset_data.json
+preset_differences.json
+preset_files_build42/
+settings_database.json
+settings_manager.py
+push_to_github.sh
+setup_github.sh
