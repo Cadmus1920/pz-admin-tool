@@ -3212,6 +3212,11 @@ class SettingsEditorWindow(tk.Toplevel):
         notebook.add(zombie_frame, text="Zombies")
         self.create_zombie_settings(zombie_frame)
         
+        # Skills & XP (Build 42)
+        skills_frame = ttk.Frame(notebook)
+        notebook.add(skills_frame, text="⭐ Skills & XP")
+        self.create_skills_settings(skills_frame)
+        
         # Advanced Settings
         advanced_frame = ttk.Frame(notebook)
         notebook.add(advanced_frame, text="Advanced")
@@ -3370,52 +3375,8 @@ class SettingsEditorWindow(tk.Toplevel):
         self.add_slider_setting(scrollable_frame, 'ElecShutModifier', 'Elec Shut Modifier (days):', row, 0, 30, 1, is_lua=True)
         row += 1
         
-        # Loot Respawn
-        # LootRespawn removed - doesn't exist in Build 42
-        # Use HoursForLootRespawn instead
-        
-        
-        # Loot Abundance
-        self.add_choice_setting(scrollable_frame, 'LootAbundance', 'Loot Abundance:', row, {
-            'Extremely Rare': 1, 'Rare': 2, 'Normal': 3, 'Abundant': 4, 'Extremely Abundant': 5
-        }, is_lua=True)
-        row += 1
-        
-        # Food Loot
-        self.add_choice_setting(scrollable_frame, 'FoodLoot', 'Food Loot:', row, {
-            'Extremely Rare': 1, 'Rare': 2, 'Normal': 3, 'Abundant': 4, 'Extremely Abundant': 5
-        }, is_lua=True)
-        row += 1
-        
-        # Weapon Loot
-        self.add_choice_setting(scrollable_frame, 'WeaponLoot', 'Weapon Loot:', row, {
-            'Extremely Rare': 1, 'Rare': 2, 'Normal': 3, 'Abundant': 4, 'Extremely Abundant': 5
-        }, is_lua=True)
-        row += 1
-        
-        # Other Loot
-        self.add_choice_setting(scrollable_frame, 'OtherLoot', 'Other Loot:', row, {
-            'Extremely Rare': 1, 'Rare': 2, 'Normal': 3, 'Abundant': 4, 'Extremely Abundant': 5
-        }, is_lua=True)
-        row += 1
-        
-        # XP Multiplier
-        self.add_choice_setting(scrollable_frame, 'XpMultiplier', 'XP Multiplier:', row, {
-            '0.25x': 0.25, '0.5x': 0.5, '0.75x': 0.75, '1x (Normal)': 1.0,
-            '1.5x': 1.5, '2x': 2.0, '3x': 3.0, '4x': 4.0, '5x': 5.0
-        }, is_lua=True)
-        row += 1
-        
-        # Farming Speed
-        self.add_choice_setting(scrollable_frame, 'FarmingSpeed', 'Farming Speed:', row, {
-            'Very Fast': 1, 'Fast': 2, 'Normal': 3, 'Slow': 4, 'Very Slow': 5
-        }, is_lua=True)
-        row += 1
-        
-        # Nature Abundance
-        self.add_choice_setting(scrollable_frame, 'NatureAbundance', 'Nature Abundance (Foraging):', row, {
-            'Very Poor': 1, 'Poor': 2, 'Normal': 3, 'Abundant': 4, 'Very Abundant': 5
-        }, is_lua=True)
+        ttk.Label(scrollable_frame, text="ℹ️ Note: Loot, XP, and farming settings moved to their respective tabs", 
+                 font=('TkDefaultFont', 8), foreground='blue').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=10)
         row += 1
         
         canvas.pack(side="left", fill="both", expand=True)
@@ -3455,22 +3416,19 @@ class SettingsEditorWindow(tk.Toplevel):
         
         # Zombie Speed
         self.add_choice_setting(scrollable_frame, 'Speed', 'Zombie Speed:', row, {
-            'Sprinters': 1, 'Fast Shamblers': 2, 'Shamblers': 3, 'Random': 4, 
-            'Random (Shamblers-Fast Shamblers)': 5
+            'Sprinters': 1, 'Fast Shamblers': 2, 'Shamblers': 3, 'Random': 4
         }, is_lua=True)
         row += 1
         
         # Zombie Strength
         self.add_choice_setting(scrollable_frame, 'Strength', 'Zombie Strength:', row, {
-            'Superhuman': 1, 'Normal': 2, 'Weak': 3, 'Random': 4,
-            'Random (Weak-Normal)': 5, 'Random (Normal-Superhuman)': 6
+            'Superhuman': 1, 'Normal': 2, 'Weak': 3, 'Random': 4
         }, is_lua=True)
         row += 1
         
         # Zombie Toughness
         self.add_choice_setting(scrollable_frame, 'Toughness', 'Zombie Toughness:', row, {
-            'Tough': 1, 'Normal': 2, 'Fragile': 3, 'Random': 4,
-            'Random (Fragile-Normal)': 5, 'Random (Normal-Tough)': 6
+            'Tough': 1, 'Normal': 2, 'Fragile': 3, 'Random': 4
         }, is_lua=True)
         row += 1
         
@@ -3607,6 +3565,157 @@ class SettingsEditorWindow(tk.Toplevel):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
     
+    def create_skills_settings(self, parent):
+        """Create skill XP multiplier settings (Build 42)"""
+        canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind("<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        row = 0
+        
+        ttk.Label(scrollable_frame, text="🆕 Skill XP Multipliers (Build 42)", 
+                 font=('TkDefaultFont', 11, 'bold'), foreground='green').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="⚠️ CRITICAL: Use EXACT variable names. Variable names ≠ in-game skill names!", 
+                 font=('TkDefaultFont', 8, 'bold'), foreground='red').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 5))
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="1.0 = Normal XP gain. Min: 0.01 (disabled), Max: 1000.0", 
+                 font=('TkDefaultFont', 8)).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 10))
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        # GLOBAL XP MULTIPLIER (overrides individual skills when enabled)
+        ttk.Label(scrollable_frame, text="🌐 Global XP Multiplier", 
+                 font=('TkDefaultFont', 10, 'bold'), foreground='blue').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="When enabled, this overrides ALL individual skill multipliers below", 
+                 font=('TkDefaultFont', 8), foreground='orange').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 5))
+        row += 1
+        
+        # GlobalToggle - Enable/Disable global multiplier
+        self.add_bool_setting(scrollable_frame, 'GlobalToggle', 'Use Global Multiplier (overrides individual):', row, is_lua=True)
+        row += 1
+        
+        # Global - The actual multiplier value
+        self.add_slider_setting(scrollable_frame, 'Global', 'Global XP Multiplier:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="Individual Skill Multipliers (only apply when Global is OFF)", 
+                 font=('TkDefaultFont', 9, 'italic')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        # Physical & Movement Skills
+        ttk.Label(scrollable_frame, text="Physical & Movement:", font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Fitness', 'Fitness:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        # Strength XP removed due to naming conflict with Zombie Strength setting
+        # Users can use the Global multiplier above to adjust all skills including Strength
+        self.add_slider_setting(scrollable_frame, 'Sprinting', 'Sprinting:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Lightfoot', 'Lightfoot (Lightfooted):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Nimble', 'Nimble:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Sneak', 'Sneak (Sneaking):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        # Weapon Skills
+        ttk.Label(scrollable_frame, text="Weapon Skills:", font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Axe', 'Axe:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Blunt', 'Blunt (Long Blunt):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'SmallBlunt', 'SmallBlunt (Short Blunt):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'LongBlade', 'LongBlade (Long Blade):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'SmallBlade', 'SmallBlade (Short Blade):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Spear', 'Spear:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Maintenance', 'Maintenance:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Aiming', 'Aiming:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Reloading', 'Reloading:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        # Crafting & Building Skills
+        ttk.Label(scrollable_frame, text="Crafting & Building:", font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Woodwork', 'Woodwork (Carpentry):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Cooking', 'Cooking:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Doctor', 'Doctor (First Aid):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Electricity', 'Electricity (Electrical):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'MetalWelding', 'MetalWelding (Welding/Metalworking):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Mechanics', 'Mechanics:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Tailoring', 'Tailoring:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Blacksmith', 'Blacksmith (Blacksmithing):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Pottery', 'Pottery:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Carving', 'Carving:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Masonry', 'Masonry:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'FlintKnapping', 'FlintKnapping (Knapping):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Glassmaking', 'Glassmaking:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        # Survival & Gathering Skills
+        ttk.Label(scrollable_frame, text="Survival & Gathering:", font=('TkDefaultFont', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Farming', 'Farming (Agriculture):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Fishing', 'Fishing:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Trapping', 'Trapping:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'PlantScavenging', 'PlantScavenging (Foraging):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Butchering', 'Butchering:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Husbandry', 'Husbandry (Animal Care):', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'Tracking', 'Tracking:', row, 0.01, 1000, 0.1, is_lua=True)
+        row += 1
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
     def create_advanced_settings(self, parent):
         """Create advanced settings controls"""
         canvas = tk.Canvas(parent, bg=self.get_canvas_bg(), highlightthickness=0)
@@ -3716,6 +3825,38 @@ class SettingsEditorWindow(tk.Toplevel):
         self.add_slider_setting(scrollable_frame, 'ToolLootNew', 'Tools (General):', row, 0, 4, 0.1, is_lua=True)
         row += 1
         self.add_slider_setting(scrollable_frame, 'OtherLootNew', 'Other Items:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="🔙 Build 41 Loot Settings (Legacy)",
+                 font=('TkDefaultFont', 10, 'bold'), foreground='orange').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+        
+        ttk.Label(scrollable_frame, text="These are the old Build 41 loot categories. Use Build 42 settings above for better control.",
+                 font=('TkDefaultFont', 8)).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 10))
+        row += 1
+        
+        # Build 41 Loot Settings
+        self.add_choice_setting(scrollable_frame, 'LootAbundance', 'Overall Loot Abundance (B41):', row, {
+            'Extremely Rare': 1, 'Rare': 2, 'Normal': 3, 'Abundant': 4, 'Extremely Abundant': 5
+        }, is_lua=True)
+        row += 1
+        
+        self.add_choice_setting(scrollable_frame, 'FoodLoot', 'Food Loot (B41):', row, {
+            'Extremely Rare': 1, 'Rare': 2, 'Normal': 3, 'Abundant': 4, 'Extremely Abundant': 5
+        }, is_lua=True)
+        row += 1
+        
+        self.add_choice_setting(scrollable_frame, 'WeaponLoot', 'Weapon Loot (B41):', row, {
+            'Extremely Rare': 1, 'Rare': 2, 'Normal': 3, 'Abundant': 4, 'Extremely Abundant': 5
+        }, is_lua=True)
+        row += 1
+        
+        self.add_choice_setting(scrollable_frame, 'OtherLoot', 'Other Loot (B41):', row, {
+            'Extremely Rare': 1, 'Rare': 2, 'Normal': 3, 'Abundant': 4, 'Extremely Abundant': 5
+        }, is_lua=True)
         row += 1
         
         canvas.pack(side="left", fill="both", expand=True)
@@ -4004,10 +4145,8 @@ class SettingsEditorWindow(tk.Toplevel):
         }, is_lua=True)
         row += 1
         
-        # Zombie Health Impact
-        self.add_choice_setting(scrollable_frame, 'ZombieHealthImpact', 'Zombie Health Impact on Player:', row, {
-            'None': 1, 'Low': 2, 'Normal': 3, 'High': 4
-        }, is_lua=True)
+        # Zombie Health Impact (Build 42: boolean true/false)
+        self.add_bool_setting(scrollable_frame, 'ZombieHealthImpact', 'Zombie Health Impact on Player:', row, is_lua=True)
         row += 1
         
         # Decaying Corpse Health Impact
@@ -4106,10 +4245,9 @@ class SettingsEditorWindow(tk.Toplevel):
         row += 1
         
         # Zombie Lore
-        self.add_choice_setting(scrollable_frame, 'ZombieLore', 'Zombie Lore (Affects Sandbox):', row, {
-            'Sprinters': 1, 'Fast Shamblers': 2, 'Shamblers': 3, 'Random': 4
-        }, is_lua=True)
-        row += 1
+        
+        # Note: ZombieLore is a container in the Lua file, not a setting itself.
+        # The actual zombie behavior settings (Speed, Strength, Toughness, etc.) are in the Zombies tab above.
         
         # ProperZombies removed - doesn't exist in Build 42
         
@@ -4264,101 +4402,8 @@ class SettingsEditorWindow(tk.Toplevel):
         self.add_bool_setting(scrollable_frame, 'Nutrition', 'Enable Nutrition System:', row, is_lua=True)
         row += 1
         
-        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
-        row += 1
-        
-        ttk.Label(scrollable_frame, text="🆕 Skill XP Multipliers (Build 42)", 
-                 font=('TkDefaultFont', 10, 'bold'), foreground='green').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
-        row += 1
-        
-        ttk.Label(scrollable_frame, text="⚠️ CRITICAL: Use EXACT variable names from Build 42. Variable names ≠ in-game skill names!", 
-                 font=('TkDefaultFont', 8, 'bold'), foreground='red').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(0, 5))
-        row += 1
-        
-        # Physical/Movement Skills
-        ttk.Label(scrollable_frame, text="Physical & Movement:", font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Fitness', 'Fitness:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Strength', 'Strength:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Sprinting', 'Sprinting:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Lightfoot', 'Lightfoot (Lightfooted):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Nimble', 'Nimble:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Sneak', 'Sneak (Sneaking):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        
-        # Weapon Skills
-        ttk.Label(scrollable_frame, text="Weapon Skills:", font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Axe', 'Axe:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Blunt', 'Blunt (Long Blunt):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'SmallBlunt', 'SmallBlunt (Short Blunt):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'LongBlade', 'LongBlade (Long Blade):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'SmallBlade', 'SmallBlade (Short Blade):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Spear', 'Spear:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Maintenance', 'Maintenance:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Aiming', 'Aiming:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Reloading', 'Reloading:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        
-        # Crafting/Building Skills
-        ttk.Label(scrollable_frame, text="Crafting & Building:", font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Woodwork', 'Woodwork (Carpentry):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Cooking', 'Cooking:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Doctor', 'Doctor (First Aid):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Electricity', 'Electricity (Electrical):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'MetalWelding', 'MetalWelding (Welding/Metalworking):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Mechanics', 'Mechanics:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Tailoring', 'Tailoring:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Blacksmith', 'Blacksmith (Blacksmithing):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Pottery', 'Pottery:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Carving', 'Carving:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Masonry', 'Masonry:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'FlintKnapping', 'FlintKnapping (Knapping):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Glassmaking', 'Glassmaking:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        
-        # Survival/Gathering Skills
-        ttk.Label(scrollable_frame, text="Survival & Gathering:", font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Farming', 'Farming (Agriculture):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Fishing', 'Fishing:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Trapping', 'Trapping:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'PlantScavenging', 'PlantScavenging (Foraging):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Butchering', 'Butchering:', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Husbandry', 'Husbandry (Animal Care):', row, 0.01, 1000, 0.1, is_lua=True)
-        row += 1
-        self.add_slider_setting(scrollable_frame, 'Tracking', 'Tracking:', row, 0.01, 1000, 0.1, is_lua=True)
+        ttk.Label(scrollable_frame, text="ℹ️ Note: Skill XP multipliers moved to '⭐ Skills & XP' tab", 
+                 font=('TkDefaultFont', 8), foreground='blue').grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=10)
         row += 1
         
         canvas.pack(side="left", fill="both", expand=True)
