@@ -4546,236 +4546,554 @@ class SettingsEditorWindow(tk.Toplevel):
                         return
     
     def get_preset_data(self):
-        """Get all preset configurations"""
+        """Get all preset configurations - Build 42.13.2 Verified"""
         return {
             'Apocalypse': {
-                # Zombies
-                'Zombies': 4,  # Normal
-                'Distribution': 1,  # Urban Focused
-                'DayLength': 3,  # 1 Hour
-                'StartMonth': 7,  # July
-                'StartDay': 9,
-                'StartYear': 1,  # 1993
-                'WaterShut': 2,  # 0-30 Days
-                'ElecShut': 2,  # 0-30 Days
-                'TimeSinceApo': 1,  # 0-1 Month
-                'Temperature': 3,  # Normal
-                'Rain': 3,  # Normal
-                'ErosionSpeed': 3,  # Normal (100 Days)
-                'XpMultiplier': 1.0,
-                'ZombieRespawn': 4,  # None
-                'ZombieLore': 3,  # Shamblers
-                'Speed': 2,  # Fast Shamblers
-                'Strength': 2,  # Normal
-                'Toughness': 2,  # Normal
-                'Transmission': 1,  # Blood + Saliva
-                'Mortality': 5,  # 2-3 Days
-                'Reanimate': 3,  # 0-1 Minutes
-                'Cognition': 3,  # Basic Navigation
-                'Memory': 2,  # Normal
-                'Sight': 2,  # Normal
-                'Hearing': 2,  # Normal
-                'ThumpNoChasing': False,
-                'ThumpOnConstruction': True,
-                'ActiveOnly': 1,  # Both
-                'TriggerHouseAlarm': False,
-                'ZombiesDragDown': True,
-                'ZombiesFenceLunge': True,
-                'AllowExteriorGenerator': True,
-                'MaxFogIntensity': 3,  # Normal
-                'MaxRainFxIntensity': 3,  # Normal
-                'EnableSnowOnGround': True,
+                'Alarm': 4,
+                'AllowMiniMap': False,
+                'AmmoLootNew': 0.6,
+                'CarAlarm': 2,
+                'CarGeneralCondition': 2,
+                'CarSpawnRate': 3,
+                'ChanceHasGas': 1,
+                'ChanceOfAttachedWeapon': 6,
+                'ClothingDegradation': 3,
+                'ClothingLootNew': 0.6,
+                'Cognition': 3,
+                'ConstructionBonusPoints': 3,
+                'ContainerLootNew': 0.6,
+                'DayLength': 4,
+                'DisableFakeDead': 1,
+                'EasyClimbing': False,
+                'ElecShut': 2,
+                'ElecShutModifier': 14,
+                'EnablePoisoning': 1,
+                'ErosionSpeed': 3,
+                'FarmingLootNew': 0.6,
+                'FollowSoundDistance': 100,
+                'FoodRotSpeed': 3,
+                'FridgeFactor': 3,
+                'GeneratorTileRange': 20,
+                'GeneratorVerticalPowerRange': 3,
+                'Hearing': 5,
+                'InitialGas': 2,
+                'InjurySeverity': 2,
+                'KeyLootNew': 0.6,
+                'LightBulbLifespan': 1.0,
+                'LiteratureLootNew': 0.6,
+                'LockedCar': 3,
+                'LockedHouses': 6,
+                'MaterialLootNew': 0.6,
+                'MaximumLooted': 50,
+                'MechanicsLootNew': 0.6,
+                'MediaLootNew': 0.6,
+                'MedicalLootNew': 0.6,
+                'MementoLootNew': 0.6,
+                'Memory': 2,
                 'MultiHitZombies': False,
-                'RearVulnerability': 3,  # High
-                'AttackBlockMovements': True,
-            },
-            'Survivor': {
-                'Zombies': 4,  # Normal
-                'Distribution': 1,  # Urban Focused
-                'DayLength': 3,  # 1 Hour
-                'StartMonth': 7,  # July
-                'StartDay': 9,
-                'WaterShut': 3,  # 0-2 Months
-                'ElecShut': 3,  # 0-2 Months
-                'TimeSinceApo': 1,  # 0-1 Month
-                'XpMultiplier': 1.0,
-                'ZombieRespawn': 4,  # None
-                'Speed': 3,  # Shamblers
-                'Strength': 2,  # Normal
-                'Toughness': 2,  # Normal
-                'Transmission': 1,  # Blood + Saliva
-                'Mortality': 5,  # 2-3 Days
-                'Reanimate': 3,  # 0-1 Minutes
-                'Cognition': 3,  # Basic Navigation
-                'Memory': 2,  # Normal
-                'Sight': 2,  # Normal
-                'Hearing': 2,  # Normal
+                'MuscleStrainFactor': 1.0,
+                'NatureAbundance': 3,
+                'OtherLootNew': 0.6,
+                'PlantAbundance': 3,
+                'PlantResilience': 3,
+                'PopulationMultiplier': 0.65,
+                'PopulationPeakDay': 28,
+                'PopulationPeakMultiplier': 1.5,
+                'PopulationStartMultiplier': 1.0,
+                'RallyGroupRadius': 3,
+                'RallyGroupSize': 20,
+                'RallyTravelDistance': 20,
+                'RangedWeaponLootNew': 0.6,
+                'RearVulnerability': 3,
+                'RecentlySurvivorVehicles': 2,
+                'RespawnHours': 72.0,
+                'RespawnMultiplier': 0.1,
+                'Sight': 5,
+                'Speed': 4,  # Random
+                'StartMonth': 7,
+                'StarterKit': False,
+                'StatsDecrease': 3,
+                'SurvivalGearsLootNew': 0.6,
                 'ThumpNoChasing': False,
-                'ThumpOnConstruction': False,
-                'ActiveOnly': 1,  # Both
-                'TriggerHouseAlarm': True,
+                'TimeSinceApo': 1,
+                'ToolLootNew': 0.6,
+                'Toughness': 4,  # Random
+                'WaterShut': 2,
+                'WaterShutModifier': 14,
+                'WeaponLootNew': 0.6,
+                'Zombies': 4,  # Normal
+                'ZombiesArmorFactor': 2.0,
                 'ZombiesDragDown': True,
-                'ZombiesFenceLunge': True,
-                'MultiHitZombies': True,
-                'RearVulnerability': 3,  # High
+                'ZombiesMaxDefense': 85
             },
             'Builder': {
-                'Zombies': 5,  # Low
-                'Distribution': 1,  # Urban Focused
-                'DayLength': 3,  # 1 Hour
-                'StartMonth': 7,  # July
-                'StartDay': 9,
-                'WaterShut': 5,  # 6-12 Months
-                'ElecShut': 5,  # 6-12 Months
-                'TimeSinceApo': 1,  # 0-1 Month
-                'XpMultiplier': 1.0,
-                'ZombieRespawn': 4,  # None
-                'Speed': 3,  # Shamblers
-                'Strength': 2,  # Normal
-                'Toughness': 3,  # Fragile
-                'Transmission': 1,  # Blood + Saliva
-                'Mortality': 5,  # 2-3 Days
-                'Reanimate': 3,  # 0-1 Minutes
-                'Cognition': 3,  # Basic Navigation
-                'Memory': 2,  # Normal
-                'Sight': 3,  # Poor
-                'Hearing': 3,  # Poor
-                'ThumpNoChasing': True,
-                'ThumpOnConstruction': False,
-                'ActiveOnly': 1,  # Both
-                'TriggerHouseAlarm': True,
-                'ZombiesDragDown': False,
-                'ZombiesFenceLunge': False,
+                'Alarm': 4,
+                'AllowMiniMap': True,
+                'AmmoLootNew': 0.2,
+                'CarAlarm': 2,
+                'CarGeneralCondition': 2,
+                'CarSpawnRate': 3,
+                'ChanceHasGas': 1,
+                'ChanceOfAttachedWeapon': 6,
+                'ClothingDegradation': 4,
+                'ClothingLootNew': 0.2,
+                'Cognition': 3,
+                'ConstructionBonusPoints': 4,
+                'ContainerLootNew': 0.2,
+                'DayLength': 3,
+                'DisableFakeDead': 3,
+                'EasyClimbing': True,
+                'ElecShut': 2,
+                'ElecShutModifier': 14,
+                'EnablePoisoning': 2,
+                'ErosionSpeed': 3,
+                'FarmingLootNew': 0.2,
+                'FollowSoundDistance': 100,
+                'FoodRotSpeed': 3,
+                'FridgeFactor': 3,
+                'GeneratorTileRange': 40,
+                'GeneratorVerticalPowerRange': 8,
+                'Hearing': 3,
+                'InitialGas': 2,
+                'InjurySeverity': 1,
+                'KeyLootNew': 0.2,
+                'LightBulbLifespan': 0.0,
+                'LiteratureLootNew': 0.2,
+                'LockedCar': 3,
+                'LockedHouses': 6,
+                'MaterialLootNew': 0.2,
+                'MaximumLooted': 0,
+                'MechanicsLootNew': 0.2,
+                'MediaLootNew': 0.2,
+                'MedicalLootNew': 0.2,
+                'MementoLootNew': 0.2,
+                'Memory': 2,
                 'MultiHitZombies': True,
-                'RearVulnerability': 3,  # High
-                'FoodLoot': 2.0,
-                'WeaponLoot': 2.0,
-            },
-            'Beginner': {
-                'Zombies': 5,  # Low
-                'Distribution': 2,  # Uniform
-                'DayLength': 1,  # 15 Minutes
-                'StartMonth': 7,  # July
-                'StartDay': 9,
-                'WaterShut': 5,  # 6-12 Months
-                'ElecShut': 5,  # 6-12 Months
-                'TimeSinceApo': 1,  # 0-1 Month
-                'XpMultiplier': 1.5,
-                'ZombieRespawn': 4,  # None
+                'MuscleStrainFactor': 0.0,
+                'NatureAbundance': 3,
+                'OtherLootNew': 0.2,
+                'PlantAbundance': 3,
+                'PlantResilience': 3,
+                'PopulationMultiplier': 0.15,
+                'PopulationPeakDay': 28,
+                'PopulationPeakMultiplier': 1.5,
+                'PopulationStartMultiplier': 0.5,
+                'RallyGroupRadius': 3,
+                'RallyGroupSize': 20,
+                'RallyTravelDistance': 20,
+                'RangedWeaponLootNew': 0.2,
+                'RearVulnerability': 1,
+                'RecentlySurvivorVehicles': 2,
+                'RespawnHours': 72.0,
+                'RespawnMultiplier': 0.1,
+                'Sight': 3,
                 'Speed': 3,  # Shamblers
-                'Strength': 3,  # Weak
-                'Toughness': 3,  # Fragile
-                'Transmission': 2,  # Saliva Only
-                'Mortality': 6,  # 1-2 Weeks
-                'Reanimate': 5,  # 2-3 Days
-                'Cognition': 3,  # Basic Navigation
-                'Memory': 3,  # Short
-                'Sight': 3,  # Poor
-                'Hearing': 3,  # Poor
-                'ThumpNoChasing': True,
-                'ThumpOnConstruction': False,
-                'ActiveOnly': 2,  # Night
-                'TriggerHouseAlarm': True,
-                'ZombiesDragDown': False,
-                'ZombiesFenceLunge': False,
-                'MultiHitZombies': True,
-                'RearVulnerability': 3,  # High
-                'FoodLoot': 2.0,
-                'WeaponLoot': 2.0,
+                'StartMonth': 7,
                 'StarterKit': True,
+                'StatsDecrease': 2,
+                'SurvivalGearsLootNew': 0.2,
+                'ThumpNoChasing': False,
+                'TimeSinceApo': 1,
+                'ToolLootNew': 0.2,
+                'Toughness': 3,  # Fragile
+                'WaterShut': 2,
+                'WaterShutModifier': 14,
+                'WeaponLootNew': 0.2,
+                'Zombies': 5,  # Low
+                'ZombiesArmorFactor': 1.0,
+                'ZombiesDragDown': False,
+                'ZombiesMaxDefense': 70
             },
-            'First Week': {
+            'Survivor': {
+                'Alarm': 4,
+                'AllowMiniMap': True,
+                'AmmoLootNew': 0.6,
+                'CarAlarm': 2,
+                'CarGeneralCondition': 2,
+                'CarSpawnRate': 3,
+                'ChanceHasGas': 1,
+                'ChanceOfAttachedWeapon': 12,
+                'ClothingDegradation': 3,
+                'ClothingLootNew': 0.6,
+                'Cognition': 3,
+                'ConstructionBonusPoints': 3,
+                'ContainerLootNew': 0.6,
+                'DayLength': 3,
+                'DisableFakeDead': 1,
+                'EasyClimbing': True,
+                'ElecShut': 2,
+                'ElecShutModifier': 14,
+                'EnablePoisoning': 1,
+                'ErosionSpeed': 3,
+                'FarmingLootNew': 0.6,
+                'FollowSoundDistance': 100,
+                'FoodRotSpeed': 3,
+                'FridgeFactor': 3,
+                'GeneratorTileRange': 20,
+                'GeneratorVerticalPowerRange': 3,
+                'Hearing': 2,
+                'InitialGas': 2,
+                'InjurySeverity': 2,
+                'KeyLootNew': 0.6,
+                'LightBulbLifespan': 1.0,
+                'LiteratureLootNew': 0.6,
+                'LockedCar': 3,
+                'LockedHouses': 6,
+                'MaterialLootNew': 0.6,
+                'MaximumLooted': 0,
+                'MechanicsLootNew': 0.6,
+                'MediaLootNew': 0.6,
+                'MedicalLootNew': 0.6,
+                'MementoLootNew': 0.6,
+                'Memory': 2,
+                'MultiHitZombies': True,
+                'MuscleStrainFactor': 0.5,
+                'NatureAbundance': 3,
+                'OtherLootNew': 0.6,
+                'PlantAbundance': 3,
+                'PlantResilience': 3,
+                'PopulationMultiplier': 0.65,
+                'PopulationPeakDay': 28,
+                'PopulationPeakMultiplier': 1.5,
+                'PopulationStartMultiplier': 1.0,
+                'RallyGroupRadius': 3,
+                'RallyGroupSize': 20,
+                'RallyTravelDistance': 20,
+                'RangedWeaponLootNew': 0.6,
+                'RearVulnerability': 1,
+                'RecentlySurvivorVehicles': 2,
+                'RespawnHours': 72.0,
+                'RespawnMultiplier': 0.1,
+                'Sight': 2,
+                'Speed': 2,  # Fast Shamblers
+                'StartMonth': 7,
+                'StarterKit': False,
+                'StatsDecrease': 3,
+                'SurvivalGearsLootNew': 0.6,
+                'ThumpNoChasing': False,
+                'TimeSinceApo': 1,
+                'ToolLootNew': 0.6,
+                'Toughness': 2,  # Normal
+                'WaterShut': 2,
+                'WaterShutModifier': 14,
+                'WeaponLootNew': 0.6,
                 'Zombies': 4,  # Normal
-                'Distribution': 1,  # Urban Focused
-                'DayLength': 3,  # 1 Hour
-                'StartMonth': 7,  # July
-                'StartDay': 9,
-                'WaterShut': 1,  # Instant
-                'ElecShut': 1,  # Instant
-                'TimeSinceApo': 1,  # 0-1 Month
-                'XpMultiplier': 1.0,
-                'ZombieRespawn': 1,  # High
-                'Speed': 2,  # Fast Shamblers
-                'Strength': 2,  # Normal
-                'Toughness': 2,  # Normal
-                'Transmission': 1,  # Blood + Saliva
-                'Mortality': 5,  # 2-3 Days
-                'Reanimate': 3,  # 0-1 Minutes
-                'Cognition': 3,  # Basic Navigation
-                'Memory': 2,  # Normal
-                'Sight': 2,  # Normal
-                'Hearing': 2,  # Normal
-                'ThumpNoChasing': False,
-                'ThumpOnConstruction': True,
-                'ActiveOnly': 1,  # Both
-                'TriggerHouseAlarm': False,
-                'ZombiesDragDown': True,
-                'ZombiesFenceLunge': True,
-                'MultiHitZombies': False,
-                'RearVulnerability': 3,  # High
-            },
-            'Six Months Later': {
-                'Zombies': 3,  # High
-                'Distribution': 1,  # Urban Focused
-                'DayLength': 3,  # 1 Hour
-                'StartMonth': 1,  # January
-                'StartDay': 9,
-                'WaterShut': 1,  # Instant
-                'ElecShut': 1,  # Instant
-                'TimeSinceApo': 3,  # 6-12 Months
-                'XpMultiplier': 1.0,
-                'ZombieRespawn': 4,  # None
-                'Speed': 2,  # Fast Shamblers
-                'Strength': 2,  # Normal
-                'Toughness': 2,  # Normal
-                'Transmission': 1,  # Blood + Saliva
-                'Mortality': 5,  # 2-3 Days
-                'Reanimate': 3,  # 0-1 Minutes
-                'Cognition': 3,  # Basic Navigation
-                'Memory': 2,  # Normal
-                'Sight': 2,  # Normal
-                'Hearing': 2,  # Normal
-                'ThumpNoChasing': False,
-                'ThumpOnConstruction': True,
-                'ActiveOnly': 1,  # Both
-                'TriggerHouseAlarm': False,
-                'ZombiesDragDown': True,
-                'ZombiesFenceLunge': True,
-                'MultiHitZombies': False,
-                'RearVulnerability': 3,  # High
-                'FoodLoot': 0.5,
-                'ErosionSpeed': 4,  # Faster
+                'ZombiesArmorFactor': 1.0,
+                'ZombiesDragDown': False,
+                'ZombiesMaxDefense': 70
             },
             'Survival': {
-                'Zombies': 4,  # Normal
-                'Distribution': 1,  # Urban Focused
-                'DayLength': 3,  # 1 Hour
-                'StartMonth': 7,  # July
-                'StartDay': 9,
-                'WaterShut': 3,  # 0-2 Months
-                'ElecShut': 3,  # 0-2 Months
-                'TimeSinceApo': 1,  # 0-1 Month
-                'XpMultiplier': 1.0,
-                'ZombieRespawn': 4,  # None
-                'Speed': 2,  # Fast Shamblers
-                'Strength': 2,  # Normal
-                'Toughness': 1,  # Tough
-                'Transmission': 1,  # Blood + Saliva
-                'Mortality': 5,  # 2-3 Days
-                'Reanimate': 3,  # 0-1 Minutes
-                'Cognition': 2,  # Navigate
-                'Memory': 1,  # Long
-                'Sight': 1,  # Eagle
-                'Hearing': 1,  # Pinpoint
-                'ThumpNoChasing': False,
-                'ThumpOnConstruction': True,
-                'ActiveOnly': 1,  # Both
-                'TriggerHouseAlarm': False,
-                'ZombiesDragDown': True,
-                'ZombiesFenceLunge': True,
+                'Alarm': 4,
+                'AllowMiniMap': False,
+                'AmmoLootNew': 0.6,
+                'CarAlarm': 2,
+                'CarGeneralCondition': 2,
+                'CarSpawnRate': 3,
+                'ChanceHasGas': 1,
+                'ChanceOfAttachedWeapon': 6,
+                'ClothingDegradation': 3,
+                'ClothingLootNew': 0.6,
+                'Cognition': 3,
+                'ConstructionBonusPoints': 3,
+                'ContainerLootNew': 0.6,
+                'DayLength': 3,
+                'DisableFakeDead': 1,
+                'EasyClimbing': False,
+                'ElecShut': 2,
+                'ElecShutModifier': 14,
+                'EnablePoisoning': 1,
+                'ErosionSpeed': 3,
+                'FarmingLootNew': 0.6,
+                'FollowSoundDistance': 100,
+                'FoodRotSpeed': 3,
+                'FridgeFactor': 3,
+                'GeneratorTileRange': 20,
+                'GeneratorVerticalPowerRange': 3,
+                'Hearing': 2,
+                'InitialGas': 2,
+                'InjurySeverity': 2,
+                'KeyLootNew': 0.6,
+                'LightBulbLifespan': 1.0,
+                'LiteratureLootNew': 0.6,
+                'LockedCar': 3,
+                'LockedHouses': 6,
+                'MaterialLootNew': 0.6,
+                'MaximumLooted': 50,
+                'MechanicsLootNew': 0.6,
+                'MediaLootNew': 0.6,
+                'MedicalLootNew': 0.6,
+                'MementoLootNew': 0.6,
+                'Memory': 2,
                 'MultiHitZombies': False,
-                'RearVulnerability': 2,  # Medium
-            }
+                'MuscleStrainFactor': 1.0,
+                'NatureAbundance': 3,
+                'OtherLootNew': 0.6,
+                'PlantAbundance': 3,
+                'PlantResilience': 3,
+                'PopulationMultiplier': 0.65,
+                'PopulationPeakDay': 28,
+                'PopulationPeakMultiplier': 1.5,
+                'PopulationStartMultiplier': 1.0,
+                'RallyGroupRadius': 3,
+                'RallyGroupSize': 20,
+                'RallyTravelDistance': 20,
+                'RangedWeaponLootNew': 0.6,
+                'RearVulnerability': 3,
+                'RecentlySurvivorVehicles': 2,
+                'RespawnHours': 72.0,
+                'RespawnMultiplier': 0.1,
+                'Sight': 2,
+                'Speed': 2,  # Fast Shamblers
+                'StartMonth': 7,
+                'StarterKit': False,
+                'StatsDecrease': 3,
+                'SurvivalGearsLootNew': 0.6,
+                'ThumpNoChasing': False,
+                'TimeSinceApo': 1,
+                'ToolLootNew': 0.6,
+                'Toughness': 2,  # Normal
+                'WaterShut': 2,
+                'WaterShutModifier': 14,
+                'WeaponLootNew': 0.6,
+                'Zombies': 3,  # High
+                'ZombiesArmorFactor': 2.0,
+                'ZombiesDragDown': True,
+                'ZombiesMaxDefense': 85
+            },
+            'Initial Infection': {
+                'Alarm': 2,
+                'AllowMiniMap': False,
+                'AmmoLootNew': 0.6,
+                'CarAlarm': 2,
+                'CarGeneralCondition': 4,
+                'CarSpawnRate': 5,
+                'ChanceHasGas': 3,
+                'ChanceOfAttachedWeapon': 6,
+                'ClothingDegradation': 3,
+                'ClothingLootNew': 0.6,
+                'Cognition': 2,
+                'ConstructionBonusPoints': 3,
+                'ContainerLootNew': 0.6,
+                'DayLength': 3,
+                'DisableFakeDead': 3,
+                'EasyClimbing': False,
+                'ElecShut': 8,
+                'ElecShutModifier': 600,
+                'EnablePoisoning': 2,
+                'ErosionSpeed': 3,
+                'FarmingLootNew': 0.6,
+                'FollowSoundDistance': 100,
+                'FoodRotSpeed': 4,
+                'FridgeFactor': 4,
+                'GeneratorTileRange': 20,
+                'GeneratorVerticalPowerRange': 3,
+                'Hearing': 3,
+                'InitialGas': 5,
+                'InjurySeverity': 2,
+                'KeyLootNew': 0.6,
+                'LightBulbLifespan': 0.0,
+                'LiteratureLootNew': 0.6,
+                'LockedCar': 2,
+                'LockedHouses': 2,
+                'MaterialLootNew': 0.6,
+                'MaximumLooted': 50,
+                'MechanicsLootNew': 0.6,
+                'MediaLootNew': 0.6,
+                'MedicalLootNew': 0.6,
+                'MementoLootNew': 0.6,
+                'Memory': 3,
+                'MultiHitZombies': False,
+                'MuscleStrainFactor': 1.0,
+                'NatureAbundance': 5,
+                'OtherLootNew': 0.6,
+                'PlantAbundance': 5,
+                'PlantResilience': 1,
+                'PopulationMultiplier': 0.15,
+                'PopulationPeakDay': 50,
+                'PopulationPeakMultiplier': 1.0,
+                'PopulationStartMultiplier': 0.5,
+                'RallyGroupRadius': 5,
+                'RallyGroupSize': 5,
+                'RallyTravelDistance': 5,
+                'RangedWeaponLootNew': 0.6,
+                'RearVulnerability': 3,
+                'RecentlySurvivorVehicles': 4,
+                'RespawnHours': 240.0,
+                'RespawnMultiplier': 0.1,
+                'Sight': 3,
+                'Speed': 3,  # Shamblers
+                'StartMonth': 7,
+                'StarterKit': True,
+                'StatsDecrease': 3,
+                'SurvivalGearsLootNew': 0.6,
+                'ThumpNoChasing': True,
+                'TimeSinceApo': 1,
+                'ToolLootNew': 0.6,
+                'Toughness': 3,  # Fragile
+                'WaterShut': 8,
+                'WaterShutModifier': 600,
+                'WeaponLootNew': 0.6,
+                'Zombies': 5,  # Low
+                'ZombiesArmorFactor': 2.0,
+                'ZombiesDragDown': True,
+                'ZombiesMaxDefense': 85
+            },
+            'One Week Later': {
+                'Alarm': 3,
+                'AllowMiniMap': False,
+                'AmmoLootNew': 0.6,
+                'CarAlarm': 3,
+                'CarGeneralCondition': 3,
+                'CarSpawnRate': 4,
+                'ChanceHasGas': 3,
+                'ChanceOfAttachedWeapon': 6,
+                'ClothingDegradation': 3,
+                'ClothingLootNew': 0.6,
+                'Cognition': 2,
+                'ConstructionBonusPoints': 3,
+                'ContainerLootNew': 0.6,
+                'DayLength': 3,
+                'DisableFakeDead': 1,
+                'EasyClimbing': False,
+                'ElecShut': 3,
+                'ElecShutModifier': 14,
+                'EnablePoisoning': 1,
+                'ErosionSpeed': 3,
+                'FarmingLootNew': 0.6,
+                'FollowSoundDistance': 120,
+                'FoodRotSpeed': 3,
+                'FridgeFactor': 3,
+                'GeneratorTileRange': 20,
+                'GeneratorVerticalPowerRange': 3,
+                'Hearing': 3,
+                'InitialGas': 3,
+                'InjurySeverity': 2,
+                'KeyLootNew': 0.6,
+                'LightBulbLifespan': 1.0,
+                'LiteratureLootNew': 0.6,
+                'LockedCar': 3,
+                'LockedHouses': 3,
+                'MaterialLootNew': 0.6,
+                'MaximumLooted': 50,
+                'MechanicsLootNew': 0.6,
+                'MediaLootNew': 0.6,
+                'MedicalLootNew': 0.6,
+                'MementoLootNew': 0.6,
+                'Memory': 3,
+                'MultiHitZombies': False,
+                'MuscleStrainFactor': 1.0,
+                'NatureAbundance': 4,
+                'OtherLootNew': 0.6,
+                'PlantAbundance': 4,
+                'PlantResilience': 3,
+                'PopulationMultiplier': 0.65,
+                'PopulationPeakDay': 30,
+                'PopulationPeakMultiplier': 1.5,
+                'PopulationStartMultiplier': 1.0,
+                'RallyGroupRadius': 7,
+                'RallyGroupSize': 30,
+                'RallyTravelDistance': 10,
+                'RangedWeaponLootNew': 0.6,
+                'RearVulnerability': 3,
+                'RecentlySurvivorVehicles': 2,
+                'RespawnHours': 144.0,
+                'RespawnMultiplier': 0.2,
+                'Sight': 3,
+                'Speed': 2,  # Fast Shamblers
+                'StartMonth': 7,
+                'StarterKit': False,
+                'StatsDecrease': 3,
+                'SurvivalGearsLootNew': 0.6,
+                'ThumpNoChasing': True,
+                'TimeSinceApo': 1,
+                'ToolLootNew': 0.6,
+                'Toughness': 2,  # Normal
+                'WaterShut': 3,
+                'WaterShutModifier': 14,
+                'WeaponLootNew': 0.6,
+                'Zombies': 3,  # High
+                'ZombiesArmorFactor': 2.0,
+                'ZombiesDragDown': True,
+                'ZombiesMaxDefense': 85
+            },
+            'Six Months Later': {
+                'Alarm': 1,
+                'AllowMiniMap': False,
+                'AmmoLootNew': 0.6,
+                'CarAlarm': 1,
+                'CarGeneralCondition': 1,
+                'CarSpawnRate': 3,
+                'ChanceHasGas': 1,
+                'ChanceOfAttachedWeapon': 6,
+                'ClothingDegradation': 3,
+                'ClothingLootNew': 0.6,
+                'Cognition': 2,
+                'ConstructionBonusPoints': 3,
+                'ContainerLootNew': 0.6,
+                'DayLength': 3,
+                'DisableFakeDead': 1,
+                'EasyClimbing': False,
+                'ElecShut': 1,
+                'ElecShutModifier': -1,
+                'EnablePoisoning': 1,
+                'ErosionSpeed': 1,
+                'FarmingLootNew': 0.6,
+                'FollowSoundDistance': 300,
+                'FoodRotSpeed': 3,
+                'FridgeFactor': 3,
+                'GeneratorTileRange': 20,
+                'GeneratorVerticalPowerRange': 3,
+                'Hearing': 2,
+                'InitialGas': 2,
+                'InjurySeverity': 2,
+                'KeyLootNew': 0.6,
+                'LightBulbLifespan': 1.0,
+                'LiteratureLootNew': 0.6,
+                'LockedCar': 1,
+                'LockedHouses': 1,
+                'MaterialLootNew': 0.6,
+                'MaximumLooted': 50,
+                'MechanicsLootNew': 0.6,
+                'MediaLootNew': 0.6,
+                'MedicalLootNew': 0.6,
+                'MementoLootNew': 0.6,
+                'Memory': 2,
+                'MultiHitZombies': False,
+                'MuscleStrainFactor': 1.0,
+                'NatureAbundance': 5,
+                'OtherLootNew': 0.6,
+                'PlantAbundance': 3,
+                'PlantResilience': 3,
+                'PopulationMultiplier': 1.6,
+                'PopulationPeakDay': 5,
+                'PopulationPeakMultiplier': 1.0,
+                'PopulationStartMultiplier': 2.0,
+                'RallyGroupRadius': 10,
+                'RallyGroupSize': 200,
+                'RallyTravelDistance': 30,
+                'RangedWeaponLootNew': 0.6,
+                'RearVulnerability': 3,
+                'RecentlySurvivorVehicles': 2,
+                'RespawnHours': 72.0,
+                'RespawnMultiplier': 0.5,
+                'Sight': 2,
+                'Speed': 2,  # Fast Shamblers
+                'StartMonth': 12,
+                'StarterKit': False,
+                'StatsDecrease': 3,
+                'SurvivalGearsLootNew': 0.6,
+                'ThumpNoChasing': True,
+                'TimeSinceApo': 7,
+                'ToolLootNew': 0.6,
+                'Toughness': 2,  # Normal
+                'WaterShut': 1,
+                'WaterShutModifier': -1,
+                'WeaponLootNew': 0.6,
+                'Zombies': 1,  # Insane
+                'ZombiesArmorFactor': 2.0,
+                'ZombiesDragDown': True,
+                'ZombiesMaxDefense': 85
+            },
         }
     
     def preview_preset(self):
@@ -4890,8 +5208,27 @@ class SettingsEditorWindow(tk.Toplevel):
                 return
             preset_data = presets[preset]
         
+        # Add default values for settings that don't differ between presets
+        # These should be reset when applying any preset
+        defaults = {
+            'Global': 1.0,  # Global XP multiplier
+            'GlobalToggle': True,  # Use global multiplier
+            'HoursForLootRespawn': 0,  # Loot respawn hours
+            'Transmission': 1,  # Blood + Saliva
+            'Mortality': 5,  # 2-3 Days
+            'Reanimate': 3,  # 0-1 Minutes
+            'StartDay': 9,  # Day 9
+            'StartTime': 2,  # 9 AM
+            'StartYear': 1,  # 1993
+            'Temperature': 3,  # Normal
+            'Rain': 3,  # Normal
+        }
+        
+        # Merge defaults with preset data (preset data takes priority)
+        full_preset_data = {**defaults, **preset_data}
+        
         # Apply the preset values
-        for key, value in preset_data.items():
+        for key, value in full_preset_data.items():
             if key in self.settings:
                 widget_info = self.settings[key]
                 
@@ -4912,7 +5249,8 @@ class SettingsEditorWindow(tk.Toplevel):
         messagebox.showinfo("Preset Applied", 
                           f"'{preset}' preset has been applied!\n\n"
                           f"Click 'Save Changes' to write to config files.", parent=self)
-        self.preset_var.set('Custom (Current)')
+        # Don't reset to Custom - keep showing which preset is applied
+        # It will automatically switch to Custom if user changes any settings
     
     def add_slider_setting(self, parent, key, label, row, min_val, max_val, step, is_lua=False):
         """Add a slider setting for decimal values with entry box for precise input"""
