@@ -38,12 +38,6 @@ class RCONClient:
     def connect(self):
         """Establish connection to RCON server and authenticate"""
         try:
-            # DEBUG: Print what we're using
-            print(f"DEBUG: Connecting to {self.host}:{self.port}")
-            print(f"DEBUG: Password = {repr(self.password)}")
-            print(f"DEBUG: Password length = {len(self.password)}")
-            print(f"DEBUG: Password hex = {self.password.encode('utf-8').hex()}")
-            
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.settimeout(10)
             self.sock.connect((self.host, self.port))
@@ -61,8 +55,6 @@ class RCONClient:
             packet += struct.pack('<i', auth_id)      # id  
             packet += struct.pack('<i', self.SERVERDATA_AUTH)  # type
             packet += packet_data
-            
-            print(f"DEBUG: Sending auth packet: {packet.hex()}")
             
             self.sock.sendall(packet)
             
@@ -182,8 +174,8 @@ class PZServerAdmin(tk.Tk):
     def __init__(self):
         super().__init__()
         
-        self.title("Project Zomboid Server Administration Tool")
-        self.geometry("1000x700")
+        self.title("Project Zomboid Server Admin Tool v2.3.0")
+        self.geometry("1200x800")  # Increased from 1000x700
         
         self.rcon = None
         self.auto_refresh = False
@@ -571,7 +563,7 @@ class PZServerAdmin(tk.Tk):
     def show_about(self):
         """Show about dialog"""
         about_text = """Project Zomboid Server Administration Tool
-Version 1.3.0
+Version 2.3.0
 
 A comprehensive GUI tool for managing Project Zomboid dedicated servers.
 
@@ -780,15 +772,15 @@ Created with ❤️ for the PZ community
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
+        # Server Info Tab (Default - first tab)
+        self.info_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.info_frame, text="ℹ️  Server Info")
+        self.create_info_tab()
+        
         # Players Tab
         self.players_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.players_frame, text="👥 Players")
         self.create_players_tab()
-        
-        # Server Info Tab
-        self.info_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.info_frame, text="ℹ️  Server Info")
-        self.create_info_tab()
         
         # Commands Tab
         self.commands_frame = ttk.Frame(self.notebook)
@@ -956,32 +948,64 @@ Created with ❤️ for the PZ community
         self.players_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-        # Player actions
-        actions_frame = ttk.LabelFrame(self.players_frame, text="👤 Player Actions", padding=15)
-        actions_frame.pack(fill=tk.X, padx=10, pady=10)
+        # Bind selection to auto-fill username
+        self.players_tree.bind('<<TreeviewSelect>>', self.on_player_select)
         
-        ttk.Label(actions_frame, text="Username:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.player_username_entry = ttk.Entry(actions_frame, width=20)
-        self.player_username_entry.grid(row=0, column=1, padx=5, pady=5)
+        # Player actions panel
+        actions_frame = ttk.LabelFrame(self.players_frame, text="Player Actions", padding=10)
+        actions_frame.pack(fill=tk.X, padx=10, pady=(5, 10))
         
-        # Row 0: Basic actions
-        ttk.Button(actions_frame, text="⚠️ Kick", command=lambda: self.player_action('kick'),
-                  style='Warning.TButton').grid(row=0, column=2, padx=5, pady=5)
-        ttk.Button(actions_frame, text="🚫 Ban", command=lambda: self.player_action('ban'),
-                  style='Danger.TButton').grid(row=0, column=3, padx=5, pady=5)
-        ttk.Button(actions_frame, text="📍 Teleport", command=lambda: self.player_action('teleport'),
-                  style='Accent.TButton').grid(row=0, column=4, padx=5, pady=5)
+        # Top row: Username entry and refresh
+        top_row = ttk.Frame(actions_frame)
+        top_row.pack(fill=tk.X, pady=(0, 10))
         
-        # Row 1: Admin controls
-        ttk.Button(actions_frame, text="⭐ Grant Admin", command=lambda: self.player_action('admin'),
-                  style='Success.TButton').grid(row=1, column=2, padx=5, pady=5)
-        ttk.Button(actions_frame, text="❌ Remove Admin", command=lambda: self.player_action('removeadmin'),
-                  style='Danger.TButton').grid(row=1, column=3, padx=5, pady=5)
-        ttk.Button(actions_frame, text="✨ God Mode", command=lambda: self.player_action('godmode'),
-                  style='Accent.TButton').grid(row=1, column=4, padx=5, pady=5)
+        ttk.Label(top_row, text="Username:").pack(side=tk.LEFT, padx=(0, 5))
+        self.player_username_entry = ttk.Entry(top_row, width=25)
+        self.player_username_entry.pack(side=tk.LEFT, padx=(0, 10))
         
-        ttk.Button(actions_frame, text="🔄 Refresh Players", command=self.refresh_players,
-                  style='Accent.TButton').grid(row=2, column=0, columnspan=6, pady=10)
+        ttk.Label(top_row, text="(select from list or type)", 
+                  font=('TkDefaultFont', 8)).pack(side=tk.LEFT, padx=(0, 20))
+        
+        ttk.Button(top_row, text="🔄 Refresh Players", command=self.refresh_players,
+                  style='Accent.TButton').pack(side=tk.RIGHT)
+        
+        # Button row
+        btn_row = ttk.Frame(actions_frame)
+        btn_row.pack(fill=tk.X)
+        
+        # Moderation buttons
+        ttk.Button(btn_row, text="⚠️ Kick", command=lambda: self.player_action('kick'),
+                  style='Warning.TButton', width=12).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_row, text="🚫 Ban", command=lambda: self.player_action('ban'),
+                  style='Danger.TButton', width=12).pack(side=tk.LEFT, padx=2)
+        
+        # Separator
+        ttk.Separator(btn_row, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=2)
+        
+        # Admin buttons
+        ttk.Button(btn_row, text="⭐ Grant Admin", command=lambda: self.player_action('admin'),
+                  style='Success.TButton', width=12).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_row, text="❌ Remove Admin", command=lambda: self.player_action('removeadmin'),
+                  style='Danger.TButton', width=14).pack(side=tk.LEFT, padx=2)
+        
+        # Separator
+        ttk.Separator(btn_row, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=2)
+        
+        # Utility buttons
+        ttk.Button(btn_row, text="📍 Teleport", command=lambda: self.player_action('teleport'),
+                  style='Accent.TButton', width=12).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_row, text="✨ God Mode", command=lambda: self.player_action('godmode'),
+                  style='Accent.TButton', width=12).pack(side=tk.LEFT, padx=2)
+    
+    def on_player_select(self, event):
+        """Auto-fill username when player selected from list"""
+        selection = self.players_tree.selection()
+        if selection:
+            item = self.players_tree.item(selection[0])
+            username = item['values'][0] if item['values'] else ''
+            if username and username not in ['No players online', 'Connect to server first']:
+                self.player_username_entry.delete(0, tk.END)
+                self.player_username_entry.insert(0, username)
         
     def create_info_tab(self):
         """Create the server info tab"""
@@ -1248,9 +1272,6 @@ Created with ❤️ for the PZ community
                 if not messagebox.askyesno("No Password", "RCON password is empty. Continue?"):
                     return
             
-            # Debug: show what we're actually using
-            print(f"DEBUG: Connecting to {repr(host)}:{port} with password {repr(password)}")
-            
             # Create RCON client and connect
             self.rcon = RCONClient(host, port, password)
             self.rcon.connect()
@@ -1264,7 +1285,6 @@ Created with ❤️ for the PZ community
             
         except Exception as e:
             error_msg = str(e)
-            print(f"DEBUG: Connection error: {error_msg}")
             messagebox.showerror("Connection Error", error_msg)
             self.status_label.config(text="Status: Connection Failed", foreground="red")
             self.rcon = None
@@ -1432,16 +1452,25 @@ Created with ❤️ for the PZ community
         """Get information from server files"""
         info = "=== FILE-BASED INFORMATION ===\n\n"
         server_path = Path(self.server_path.get())
+        info += f"Server path: {server_path}\n\n"
         
         try:
-            # Check for server config
-            config_files = ['servertest.ini', 'Zomboid/Server/servertest.ini']
-            for config_file in config_files:
-                config_path = server_path / config_file
+            # Check for server config in multiple locations
+            config_locations = [
+                server_path / 'Server' / 'servertest.ini',      # ~/Zomboid/Server/servertest.ini
+                server_path / 'servertest.ini',                  # Direct
+                Path.home() / 'Zomboid' / 'Server' / 'servertest.ini',  # Fallback
+            ]
+            
+            config_found = False
+            for config_path in config_locations:
                 if config_path.exists():
                     info += f"Config file found: {config_path}\n"
-                    # Could parse config here
+                    config_found = True
                     break
+            
+            if not config_found:
+                info += "Config file: Not found\n"
             
             # Check for database
             db_files = list(server_path.rglob('players.db'))
@@ -1449,11 +1478,17 @@ Created with ❤️ for the PZ community
                 info += f"\nPlayer database found: {db_files[0]}\n"
                 info += self.get_database_info(db_files[0])
             
-            # Check for logs
-            log_dir = server_path / 'Zomboid' / 'Logs'
-            if log_dir.exists():
-                log_files = list(log_dir.glob('*.txt'))
-                info += f"\nLog files found: {len(log_files)}\n"
+            # Check for logs in multiple locations
+            log_locations = [
+                server_path / 'Logs',                            # ~/Zomboid/Logs
+                Path.home() / 'Zomboid' / 'Logs',                # Fallback
+            ]
+            
+            for log_dir in log_locations:
+                if log_dir.exists():
+                    log_files = list(log_dir.glob('*.txt'))
+                    info += f"\nLog files found: {len(log_files)} in {log_dir}\n"
+                    break
                 
         except Exception as e:
             info += f"\nError reading files: {str(e)}\n"
@@ -2246,20 +2281,35 @@ Screen:
         
         try:
             server_path = Path(self.server_path.get())
-            log_dir = server_path / 'Zomboid' / 'Logs'
             
-            if not log_dir.exists():
-                log_dir = server_path / 'Logs'
+            # Try multiple possible log locations
+            log_locations = [
+                server_path / 'Logs',                    # ~/Zomboid/Logs (most common)
+                server_path / 'server-console.txt',      # Direct log file
+                server_path.parent / 'Logs',             # Parent/Logs if in Server subdir
+                Path.home() / 'Zomboid' / 'Logs',        # Fallback to home
+                Path.home() / '.local' / 'share' / 'Zomboid' / 'Logs',  # Alternative Linux
+            ]
             
-            if not log_dir.exists():
-                messagebox.showwarning("Logs Not Found", "Could not find logs directory")
+            log_dir = None
+            for loc in log_locations:
+                if loc.exists() and loc.is_dir():
+                    log_dir = loc
+                    break
+            
+            if not log_dir:
+                searched = "\n".join(f"  • {loc}" for loc in log_locations[:3])
+                messagebox.showwarning("Logs Not Found", 
+                    f"Could not find logs directory.\n\n"
+                    f"Searched in:\n{searched}\n\n"
+                    f"Your server path: {server_path}")
                 return
             
             # Find most recent log file
             log_files = sorted(log_dir.glob('*.txt'), key=os.path.getmtime, reverse=True)
             
             if not log_files:
-                messagebox.showinfo("No Logs", "No log files found")
+                messagebox.showinfo("No Logs", f"No log files found in:\n{log_dir}")
                 return
             
             # Read last N lines
@@ -2270,7 +2320,8 @@ Screen:
                 recent_lines = all_lines[-lines_to_read:]
             
             self.logs_text.delete(1.0, tk.END)
-            self.logs_text.insert(tk.END, f"=== {log_files[0].name} (last {lines_to_read} lines) ===\n\n")
+            self.logs_text.insert(tk.END, f"=== {log_files[0].name} (last {lines_to_read} lines) ===\n")
+            self.logs_text.insert(tk.END, f"=== Path: {log_dir} ===\n\n")
             self.logs_text.insert(tk.END, ''.join(recent_lines))
             
         except Exception as e:
@@ -2285,15 +2336,25 @@ Screen:
                 self.live_logs_var.set(False)
                 return
             
-            # Find log file
+            # Find log file - try multiple locations
             server_path = Path(self.server_path.get())
-            log_dir = server_path / 'Zomboid' / 'Logs'
             
-            if not log_dir.exists():
-                log_dir = server_path / 'Logs'
+            log_locations = [
+                server_path / 'Logs',                    # ~/Zomboid/Logs (most common)
+                server_path.parent / 'Logs',             # Parent/Logs if in Server subdir
+                Path.home() / 'Zomboid' / 'Logs',        # Fallback to home
+                Path.home() / '.local' / 'share' / 'Zomboid' / 'Logs',  # Alternative Linux
+            ]
             
-            if not log_dir.exists():
-                messagebox.showwarning("Logs Not Found", "Could not find logs directory")
+            log_dir = None
+            for loc in log_locations:
+                if loc.exists() and loc.is_dir():
+                    log_dir = loc
+                    break
+            
+            if not log_dir:
+                messagebox.showwarning("Logs Not Found", 
+                    f"Could not find logs directory.\n\nServer path: {server_path}")
                 self.live_logs_var.set(False)
                 return
             
@@ -2301,7 +2362,7 @@ Screen:
             log_files = sorted(log_dir.glob('*.txt'), key=os.path.getmtime, reverse=True)
             
             if not log_files:
-                messagebox.showinfo("No Logs", "No log files found")
+                messagebox.showinfo("No Logs", f"No log files found in:\n{log_dir}")
                 self.live_logs_var.set(False)
                 return
             
@@ -2399,9 +2460,10 @@ Screen:
             
             # Try multiple possible locations for banlist
             banlist_paths = [
-                server_path / 'Server' / 'banlist.txt',
-                server_path / 'Zomboid' / 'Server' / 'banlist.txt',
-                server_path / 'banlist.txt'
+                server_path / 'Server' / 'banlist.txt',              # ~/Zomboid/Server/banlist.txt
+                server_path / 'banlist.txt',                          # Direct in server_path
+                Path.home() / 'Zomboid' / 'Server' / 'banlist.txt',  # Fallback to home
+                Path.home() / '.local' / 'share' / 'Zomboid' / 'Server' / 'banlist.txt',  # Alt Linux
             ]
             
             banlist_file = None
@@ -2414,7 +2476,7 @@ Screen:
                 self.banlist_tree.insert('', tk.END, text='0',
                                         values=('No bans found', '', '', ''))
                 self.log_command_output(f"Ban list file not found. Tried:\n" + 
-                                       "\n".join(f"  - {p}" for p in banlist_paths))
+                                       "\n".join(f"  - {p}" for p in banlist_paths[:3]))
                 return
             
             # Read ban list
@@ -2569,36 +2631,62 @@ Screen:
     
     def auto_detect_path(self):
         """Try to auto-detect common server installation paths"""
-        common_paths = [
-            # Linux steamcmd installations
+        # Data directories (where config files actually live) - PRIORITIZE THESE
+        data_paths = [
+            os.path.expanduser("~/Zomboid"),  # Most common on Linux
+            os.path.expanduser("~/.local/share/Zomboid"),  # Alternative Linux location
+        ]
+        
+        # Server installation directories  
+        install_paths = [
             os.path.expanduser("~/.steam/steamapps/common/Project Zomboid Dedicated Server"),
             os.path.expanduser("~/Steam/steamapps/common/Project Zomboid Dedicated Server"),
             "/home/pzserver/.steam/steamapps/common/Project Zomboid Dedicated Server",
             "/opt/pzserver",
-            # Linux steam user installations
             os.path.expanduser("~/.local/share/Steam/steamapps/common/Project Zomboid Dedicated Server"),
-            # Windows paths
             "C:/Program Files (x86)/Steam/steamapps/common/Project Zomboid Dedicated Server",
             "C:/pzserver",
             os.path.expanduser("~/pzserver"),
-            # Look for Zomboid folder in common locations
-            os.path.expanduser("~/Zomboid"),
-            os.path.expanduser("~/.local/share/Zomboid"),
         ]
         
         found_paths = []
-        for path in common_paths:
-            if os.path.exists(path):
+        best_path = None
+        
+        # First, check data directories for actual server config files
+        for path in data_paths:
+            server_dir = os.path.join(path, 'Server')
+            if os.path.exists(server_dir):
+                # Check if it has config files
+                has_ini = any(f.endswith('.ini') for f in os.listdir(server_dir) if os.path.isfile(os.path.join(server_dir, f)))
+                if has_ini:
+                    if best_path is None:
+                        best_path = path  # First path with actual config files
+                    found_paths.append(path)
+        
+        # Then add data directories without config but that exist
+        for path in data_paths:
+            if os.path.exists(path) and path not in found_paths:
+                found_paths.append(path)
+        
+        # Finally, check install paths
+        for path in install_paths:
+            if os.path.exists(path) and path not in found_paths:
                 found_paths.append(path)
         
         if not found_paths:
             messagebox.showinfo("Auto-Detect", 
                 "Could not find server installation.\n\n" +
                 "Common locations:\n" +
-                "- Linux steamcmd: ~/.steam/steamapps/common/Project Zomboid Dedicated Server\n" +
                 "- Linux data: ~/Zomboid or ~/.local/share/Zomboid\n" +
+                "- Linux steamcmd: ~/.steam/steamapps/common/Project Zomboid Dedicated Server\n" +
                 "- Custom: /home/pzserver or /opt/pzserver\n\n" +
                 "Use Browse to select manually.")
+            return
+        
+        # If we found a path with actual config files, use it directly
+        if best_path:
+            self.server_path.set(best_path)
+            messagebox.showinfo("Success", f"Found server data at:\n{best_path}\n\n(Contains server configuration files)")
             return
         
         if len(found_paths) == 1:
@@ -2616,6 +2704,7 @@ Screen:
             for path in found_paths:
                 listbox.insert(tk.END, path)
             listbox.pack(pady=10, padx=10)
+            listbox.selection_set(0)  # Pre-select first (best) option
             
             def select_path():
                 selection = listbox.curselection()
@@ -2947,36 +3036,59 @@ Screen:
             messagebox.showwarning("No Server Path", "Please set the server path first")
             return
         
-        # Try to auto-detect config files
+        # Try to auto-detect config files from multiple locations
         server_path = Path(self.server_path.get())
+        
+        # Possible locations for config files
+        search_dirs = [
+            server_path / 'Server',              # ~/Zomboid/Server (most common)
+            server_path,                          # Direct path if user pointed to Server folder
+            Path.home() / 'Zomboid' / 'Server',  # Fallback to home
+            Path.home() / '.local' / 'share' / 'Zomboid' / 'Server',  # Alternative Linux
+        ]
         
         # Search for .ini files
         ini_files = []
-        server_dir = server_path / 'Server'
-        if server_dir.exists():
-            ini_files = list(server_dir.glob('*.ini'))
+        found_server_dir = None
+        for search_dir in search_dirs:
+            if search_dir.exists():
+                found_ini = list(search_dir.glob('*.ini'))
+                if found_ini:
+                    ini_files.extend(found_ini)
+                    if not found_server_dir:
+                        found_server_dir = search_dir
         
-        # Search for _SandboxVars.lua files
+        # Remove duplicates while preserving order
+        seen = set()
+        ini_files = [f for f in ini_files if not (f in seen or seen.add(f))]
+        
+        # Search for _SandboxVars.lua files in same locations
         lua_files = []
-        if server_dir.exists():
-            lua_files = list(server_dir.glob('*_SandboxVars.lua'))
+        for search_dir in search_dirs:
+            if search_dir.exists():
+                lua_files.extend(list(search_dir.glob('*_SandboxVars.lua')))
         
-        # Show file selection dialog
-        FileSelectionDialog(self, server_path, ini_files, lua_files)
+        # Remove duplicates
+        seen = set()
+        lua_files = [f for f in lua_files if not (f in seen or seen.add(f))]
+        
+        # Show file selection dialog with search info
+        FileSelectionDialog(self, server_path, ini_files, lua_files, search_dirs)
 
 
 class FileSelectionDialog(tk.Toplevel):
     """Dialog to select config files before opening settings editor"""
     
-    def __init__(self, parent, server_path, ini_files, lua_files):
+    def __init__(self, parent, server_path, ini_files, lua_files, search_dirs=None):
         super().__init__(parent)
         self.parent = parent
         self.server_path = server_path
         self.ini_files = ini_files
         self.lua_files = lua_files
+        self.search_dirs = search_dirs or [server_path / 'Server']
         
         self.title("Select Configuration Files")
-        self.geometry("700x500")  # Increased from 600x400
+        self.geometry("700x550")  # Slightly taller to show search info
         
         # Make modal
         self.transient(parent)
@@ -2997,25 +3109,34 @@ class FileSelectionDialog(tk.Toplevel):
     
     def create_ui(self):
         """Create the file selection UI"""
-        # Header
-        header = ttk.Label(self, text="Select your server configuration files:", 
-                          font=('TkDefaultFont', 10, 'bold'))
-        header.pack(pady=10)
+        # Header with path info
+        header_frame = ttk.Frame(self)
+        header_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        ttk.Label(header_frame, text="Select your server configuration files:", 
+                  font=('TkDefaultFont', 10, 'bold')).pack(anchor=tk.W)
+        ttk.Label(header_frame, text=f"Server path: {self.server_path}", 
+                  font=('TkDefaultFont', 8)).pack(anchor=tk.W)
         
         # INI File Selection
         ini_frame = ttk.LabelFrame(self, text="Server INI File (Required)", padding=10)
         ini_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
         if self.ini_files:
-            ttk.Label(ini_frame, text="Found .ini files:").pack(anchor=tk.W, pady=5)
+            ttk.Label(ini_frame, text=f"Found {len(self.ini_files)} .ini file(s):").pack(anchor=tk.W, pady=5)
             
             self.ini_var = tk.StringVar(value=str(self.ini_files[0]))
             for ini_file in self.ini_files:
-                ttk.Radiobutton(ini_frame, text=ini_file.name, 
+                ttk.Radiobutton(ini_frame, text=f"{ini_file.name}  ({ini_file.parent})", 
                                variable=self.ini_var, value=str(ini_file)).pack(anchor=tk.W, padx=10)
         else:
-            ttk.Label(ini_frame, text="No .ini files found in Server directory.", 
-                     foreground='red').pack(pady=5)
+            # Show where we searched
+            searched_text = "No .ini files found.\n\nSearched in:"
+            for sd in self.search_dirs[:4]:
+                exists = "✓" if sd.exists() else "✗"
+                searched_text += f"\n  {exists} {sd}"
+            
+            ttk.Label(ini_frame, text=searched_text, foreground='red', justify=tk.LEFT).pack(pady=5, anchor=tk.W)
         
         ttk.Button(ini_frame, text="Browse for .ini file...", 
                   command=self.browse_ini).pack(pady=5)
@@ -3050,26 +3171,54 @@ class FileSelectionDialog(tk.Toplevel):
     def browse_ini(self):
         """Browse for .ini file manually"""
         from tkinter import filedialog
+        
+        # Try to find best starting directory
+        start_dir = None
+        for d in self.search_dirs:
+            if d.exists():
+                start_dir = d
+                break
+        if not start_dir:
+            start_dir = self.server_path if self.server_path.exists() else Path.home()
+        
         filename = filedialog.askopenfilename(
             title="Select Server .ini File",
-            initialdir=self.server_path / 'Server' if (self.server_path / 'Server').exists() else self.server_path,
+            initialdir=start_dir,
             filetypes=[("INI files", "*.ini"), ("All files", "*.*")]
         )
         if filename:
-            self.ini_var = tk.StringVar(value=filename)
-            messagebox.showinfo("File Selected", f"Selected: {Path(filename).name}")
+            # Update existing StringVar or create new one
+            if hasattr(self, 'ini_var'):
+                self.ini_var.set(filename)
+            else:
+                self.ini_var = tk.StringVar(value=filename)
+            messagebox.showinfo("File Selected", f"Selected: {Path(filename).name}\n\nPath: {filename}")
     
     def browse_lua(self):
         """Browse for .lua file manually"""
         from tkinter import filedialog
+        
+        # Try to find best starting directory
+        start_dir = None
+        for d in self.search_dirs:
+            if d.exists():
+                start_dir = d
+                break
+        if not start_dir:
+            start_dir = self.server_path if self.server_path.exists() else Path.home()
+        
         filename = filedialog.askopenfilename(
             title="Select SandboxVars .lua File",
-            initialdir=self.server_path / 'Server' if (self.server_path / 'Server').exists() else self.server_path,
+            initialdir=start_dir,
             filetypes=[("LUA files", "*.lua"), ("All files", "*.*")]
         )
         if filename:
-            self.lua_var = tk.StringVar(value=filename)
-            messagebox.showinfo("File Selected", f"Selected: {Path(filename).name}")
+            # Update existing StringVar or create new one
+            if hasattr(self, 'lua_var'):
+                self.lua_var.set(filename)
+            else:
+                self.lua_var = tk.StringVar(value=filename)
+            messagebox.showinfo("File Selected", f"Selected: {Path(filename).name}\n\nPath: {filename}")
     
     def open_editor(self):
         """Open the settings editor with selected files"""
@@ -3168,7 +3317,7 @@ class SettingsEditorWindow(tk.Toplevel):
         self.custom_presets = self.load_custom_presets()
         
         # Combine built-in and custom presets
-        built_in_presets = ['Apocalypse', 'Survivor', 'Builder', 'Beginner', 'First Week', 
+        built_in_presets = ['Apocalypse', 'Survivor', 'Builder', 'Initial Infection', 'One Week Later', 
                            'Six Months Later', 'Survival']
         all_presets = built_in_presets + ['---'] + list(self.custom_presets.keys()) + ['Custom (Current)']
         
@@ -4459,7 +4608,7 @@ class SettingsEditorWindow(tk.Toplevel):
                 return
             
             # Check if name conflicts with built-in
-            built_in = ['Apocalypse', 'Survivor', 'Builder', 'Beginner', 'First Week', 
+            built_in = ['Apocalypse', 'Survivor', 'Builder', 'Initial Infection', 'One Week Later', 
                        'Six Months Later', 'Survival', 'Custom (Current)', '---']
             if name in built_in:
                 messagebox.showerror("Invalid Name", 
@@ -4533,7 +4682,7 @@ class SettingsEditorWindow(tk.Toplevel):
     
     def refresh_preset_dropdown(self):
         """Refresh the preset dropdown with current custom presets"""
-        built_in_presets = ['Apocalypse', 'Survivor', 'Builder', 'Beginner', 'First Week', 
+        built_in_presets = ['Apocalypse', 'Survivor', 'Builder', 'Initial Infection', 'One Week Later', 
                            'Six Months Later', 'Survival']
         all_presets = built_in_presets + ['---'] + list(self.custom_presets.keys()) + ['Custom (Current)']
         
@@ -5237,14 +5386,22 @@ class SettingsEditorWindow(tk.Toplevel):
                     for choice_name, choice_value in widget_info['choices'].items():
                         if choice_value == value:
                             widget_info['var'].set(choice_name)
+                            # Update original value
+                            self.original_values[key] = str(choice_value)
                             break
                 elif widget_info['type'] == 'bool':
                     widget_info['var'].set(value)
+                    # Update original value
+                    self.original_values[key] = 'true' if value else 'false'
                 elif widget_info['type'] == 'number':
                     widget_info['widget'].delete(0, tk.END)
                     widget_info['widget'].insert(0, str(value))
+                    # Update original value
+                    self.original_values[key] = str(value)
                 elif widget_info['type'] == 'slider':
                     widget_info['var'].set(value)
+                    # Update original value
+                    self.original_values[key] = f"{value:.1f}"
         
         messagebox.showinfo("Preset Applied", 
                           f"'{preset}' preset has been applied!\n\n"
@@ -5386,11 +5543,145 @@ class SettingsEditorWindow(tk.Toplevel):
                                                 break
                                 except ValueError:
                                     pass
+        
+        # Check for corrupted values after loading
+        self.check_and_repair_corruption()
+    
+    def check_and_repair_corruption(self):
+        """Check for corrupted values and silently repair them"""
+        corruptions = []
+        
+        for key, value in self.original_values.items():
+            if key not in self.settings:
+                continue
+            
+            widget_info = self.settings[key]
+            
+            # Check boolean corruption
+            if widget_info['type'] == 'bool':
+                # Value should be 'true' or 'false' string
+                if str(value).lower() not in ['true', 'false']:
+                    suggested = 'false'
+                    corruptions.append({
+                        'key': key,
+                        'type': 'bool',
+                        'invalid_value': value,
+                        'suggested_fix': suggested
+                    })
+            
+            # Check choice corruption (value not in valid choices)
+            elif widget_info['type'] == 'choice':
+                try:
+                    if '.' in str(value):
+                        check_val = float(value)
+                    else:
+                        check_val = int(value)
+                    
+                    valid = False
+                    for choice_val in widget_info['choices'].values():
+                        if choice_val == check_val:
+                            valid = True
+                            break
+                    
+                    if not valid:
+                        valid_values = list(widget_info['choices'].values())
+                        if valid_values:
+                            closest = min(valid_values, key=lambda x: abs(x - check_val))
+                            corruptions.append({
+                                'key': key,
+                                'type': 'choice',
+                                'invalid_value': value,
+                                'suggested_fix': str(closest)
+                            })
+                
+                except (ValueError, TypeError):
+                    valid_values = list(widget_info['choices'].values())
+                    if valid_values:
+                        corruptions.append({
+                            'key': key,
+                            'type': 'choice',
+                            'invalid_value': value,
+                            'suggested_fix': str(valid_values[0])
+                        })
+        
+        if corruptions:
+            # Auto-repair corruptions silently
+            self.repair_corruptions(corruptions)
+            
+            # Show subtle notification (non-blocking)
+            corruption_list = ", ".join(c['key'] for c in corruptions[:3])
+            if len(corruptions) > 3:
+                corruption_list += f" and {len(corruptions) - 3} more"
+            
+            # Update status bar or show brief info
+            self.parent.log_command_output(
+                f"⚠️ Auto-fixed {len(corruptions)} invalid config value(s): {corruption_list}\n"
+                f"   Click 'Save Changes' to write fixes to files."
+            )
+    
+    def repair_corruptions(self, corruptions):
+        """Repair corrupted values by setting them to valid defaults"""
+        for corruption in corruptions:
+            key = corruption['key']
+            if key not in self.settings:
+                continue
+            
+            widget_info = self.settings[key]
+            suggested_fix = corruption['suggested_fix']
+            
+            # Apply the fix to the widget
+            if widget_info['type'] == 'bool':
+                widget_info['var'].set(suggested_fix.lower() == 'true')
+                self.original_values[key] = suggested_fix
+            
+            elif widget_info['type'] == 'choice':
+                # Find the choice name for this value
+                try:
+                    if '.' in suggested_fix:
+                        fix_val = float(suggested_fix)
+                    else:
+                        fix_val = int(suggested_fix)
+                    
+                    for choice_name, choice_val in widget_info['choices'].items():
+                        if choice_val == fix_val:
+                            widget_info['var'].set(choice_name)
+                            self.original_values[key] = suggested_fix
+                            break
+                except:
+                    pass
+            
+            elif widget_info['type'] == 'slider':
+                try:
+                    widget_info['var'].set(float(suggested_fix))
+                    self.original_values[key] = suggested_fix
+                except:
+                    pass
     
     def save_settings(self):
-        """Save settings back to config files"""
+        """Save settings back to config files with validation and verification"""
+        # First, validate all settings
+        validation_errors = self.validate_settings()
+        if validation_errors:
+            error_msg = "⚠️ Invalid Settings Detected:\n\n" + "\n".join(validation_errors)
+            error_msg += "\n\nPlease fix these issues before saving."
+            messagebox.showerror("Validation Error", error_msg, parent=self)
+            return
+        
+        # Show what's about to change
+        changes = self.get_setting_changes()
+        if changes:
+            change_summary = f"📝 You're about to change {len(changes)} settings:\n\n"
+            # Show first 10 changes
+            for i, (key, old_val, new_val) in enumerate(changes[:10]):
+                change_summary += f"  • {key}: {old_val} → {new_val}\n"
+            if len(changes) > 10:
+                change_summary += f"\n  ... and {len(changes) - 10} more\n"
+            change_summary += f"\n📁 Backups will be created automatically."
+        else:
+            change_summary = "No changes detected. Settings match current file values."
+        
         if not messagebox.askyesno("Confirm Save", 
-                                   "Save changes to server configuration?\n\n"
+                                   f"{change_summary}\n\nSave changes to server configuration?\n\n"
                                    "Server must be restarted for changes to take effect.",
                                    icon='warning', parent=self):
             return
@@ -5401,13 +5692,16 @@ class SettingsEditorWindow(tk.Toplevel):
             from datetime import datetime
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
+            backup_ini = None
+            backup_lua = None
+            
             if self.ini_file:
-                backup = self.ini_file.with_suffix(f'.ini.backup_{timestamp}')
-                shutil.copy2(self.ini_file, backup)
+                backup_ini = self.ini_file.with_suffix(f'.ini.backup_{timestamp}')
+                shutil.copy2(self.ini_file, backup_ini)
             
             if self.lua_file:
-                backup = self.lua_file.with_suffix(f'.lua.backup_{timestamp}')
-                shutil.copy2(self.lua_file, backup)
+                backup_lua = self.lua_file.with_suffix(f'.lua.backup_{timestamp}')
+                shutil.copy2(self.lua_file, backup_lua)
             
             # Save .ini file
             if self.ini_file:
@@ -5454,11 +5748,9 @@ class SettingsEditorWindow(tk.Toplevel):
                         elif widget_info['type'] == 'bool':
                             new_value = 'true' if widget_info['var'].get() else 'false'
                         elif widget_info['type'] == 'slider':
-                            # Get slider value, rounded to 1 decimal place
                             new_value = f"{widget_info['var'].get():.1f}"
                         elif widget_info['type'] == 'choice':
                             selected = widget_info['var'].get()
-                            # Skip if no selection or invalid selection
                             if not selected or selected not in widget_info['choices']:
                                 continue
                             new_value = str(widget_info['choices'][selected])
@@ -5474,18 +5766,146 @@ class SettingsEditorWindow(tk.Toplevel):
                 with open(self.lua_file, 'w', encoding='utf-8') as f:
                     f.write(content)
             
-            messagebox.showinfo("Success", 
-                               f"Settings saved!\n\n"
-                               f"Backups created with timestamp {timestamp}\n\n"
-                               f"Server must be restarted for changes to take effect.", parent=self)
+            # Verify files were saved correctly
+            verification_result = self.verify_saved_files()
             
-            self.parent.log_command_output(f"Settings saved. Backups created: {timestamp}")
+            if not verification_result['success']:
+                # Restore from backup
+                if backup_ini and self.ini_file:
+                    shutil.copy2(backup_ini, self.ini_file)
+                if backup_lua and self.lua_file:
+                    shutil.copy2(backup_lua, self.lua_file)
+                
+                messagebox.showerror("Save Failed", 
+                                   f"❌ Verification failed! Files restored from backup.\n\n"
+                                   f"Error: {verification_result['error']}", parent=self)
+                return
+            
+            messagebox.showinfo("Success", 
+                               f"✅ Settings saved successfully!\n\n"
+                               f"📁 Backups created: {timestamp}\n"
+                               f"✓ Files verified and readable\n\n"
+                               f"⚠️ Server must be restarted for changes to take effect.", parent=self)
+            
+            self.parent.log_command_output(f"Settings saved and verified. Backups: {timestamp}")
             
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
             messagebox.showerror("Error", f"Failed to save settings:\n\n{str(e)}\n\nDetails:\n{error_details}", parent=self)
-            print(f"Save error: {error_details}")  # Also print to console
+    
+    def validate_settings(self):
+        """Validate all settings before saving"""
+        errors = []
+        
+        for key, widget_info in self.settings.items():
+            try:
+                if widget_info['type'] == 'number':
+                    value = widget_info['widget'].get().strip()
+                    if not value:
+                        errors.append(f"{key}: Cannot be empty")
+                    else:
+                        try:
+                            int(value)
+                        except ValueError:
+                            errors.append(f"{key}: Must be a valid number (got '{value}')")
+                
+                elif widget_info['type'] == 'slider':
+                    value = widget_info['var'].get()
+                    # Sliders are always valid since they're constrained
+                
+                elif widget_info['type'] == 'choice':
+                    selected = widget_info['var'].get()
+                    if selected and selected not in widget_info['choices']:
+                        errors.append(f"{key}: Invalid selection '{selected}'")
+                
+                elif widget_info['type'] == 'text':
+                    # Text fields generally allow anything, but check for required ones
+                    value = widget_info['widget'].get().strip()
+                    if key in ['PublicName', 'ServerPassword'] and not value:
+                        errors.append(f"{key}: Cannot be empty")
+            
+            except Exception as e:
+                errors.append(f"{key}: Error validating - {str(e)}")
+        
+        return errors
+    
+    def get_setting_changes(self):
+        """Get list of settings that changed from original values"""
+        changes = []
+        
+        for key, widget_info in self.settings.items():
+            if key not in self.original_values:
+                continue
+            
+            old_value = self.original_values[key]
+            
+            # Get current value
+            try:
+                if widget_info['type'] == 'text' or widget_info['type'] == 'number':
+                    new_value = widget_info['widget'].get()
+                elif widget_info['type'] == 'bool':
+                    new_value = 'true' if widget_info['var'].get() else 'false'
+                elif widget_info['type'] == 'slider':
+                    new_value = f"{widget_info['var'].get():.1f}"
+                elif widget_info['type'] == 'choice':
+                    selected = widget_info['var'].get()
+                    if selected and selected in widget_info['choices']:
+                        new_value = str(widget_info['choices'][selected])
+                    else:
+                        continue
+                else:
+                    continue
+                
+                # Normalize for comparison
+                old_normalized = str(old_value).strip()
+                new_normalized = str(new_value).strip()
+                
+                # For numbers, normalize decimal places
+                try:
+                    if '.' in old_normalized or '.' in new_normalized:
+                        old_float = float(old_normalized)
+                        new_float = float(new_normalized)
+                        # Compare as floats with small epsilon
+                        if abs(old_float - new_float) < 0.01:
+                            continue
+                except (ValueError, TypeError):
+                    pass
+                
+                # Compare
+                if old_normalized != new_normalized:
+                    changes.append((key, old_value, new_value))
+            
+            except:
+                continue
+        
+        return changes
+    
+    def verify_saved_files(self):
+        """Verify that saved files are readable and valid"""
+        try:
+            # Try to read INI file
+            if self.ini_file and self.ini_file.exists():
+                with open(self.ini_file, 'r', encoding='utf-8') as f:
+                    ini_content = f.read()
+                if not ini_content:
+                    return {'success': False, 'error': 'INI file is empty after save'}
+            
+            # Try to read Lua file
+            if self.lua_file and self.lua_file.exists():
+                with open(self.lua_file, 'r', encoding='utf-8') as f:
+                    lua_content = f.read()
+                if not lua_content:
+                    return {'success': False, 'error': 'Lua file is empty after save'}
+                
+                # Basic Lua syntax check - make sure it has SandboxVars structure
+                if 'SandboxVars' not in lua_content:
+                    return {'success': False, 'error': 'Lua file missing SandboxVars structure'}
+            
+            return {'success': True}
+        
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
     
     def view_raw_files(self):
         """Open raw config files in text editor"""
@@ -5782,69 +6202,243 @@ class ModManagerWindow(tk.Toplevel):
 
 
 class RawFileViewer(tk.Toplevel):
-    """Simple text viewer for raw config files"""
+    """Text viewer for raw config files with search functionality"""
     
     def __init__(self, parent, ini_file, lua_file):
         super().__init__(parent)
         self.ini_file = ini_file
         self.lua_file = lua_file
+        self.parent = parent
+        self.current_text_widget = None
+        self.search_positions = []
+        self.current_search_index = 0
         
         self.title("Raw Configuration Files")
-        self.geometry("900x700")
+        self.geometry("1000x800")
         
-        # Apply theme
-        if hasattr(parent, 'current_theme'):
-            theme = parent.current_theme.get()
-            if theme == "dark":
-                self.configure(bg="#2b2b2b")
-                text_bg = "#404040"
-                text_fg = "#ffffff"
-                select_bg = "#505050"
-            else:
-                self.configure(bg="#f5f5f5")
-                text_bg = "#ffffff"
-                text_fg = "#000000"
-                select_bg = "#0078d7"
+        # Get theme from parent or parent's parent
+        self.is_dark = False
+        theme_parent = parent
+        
+        # Walk up parent chain to find current_theme
+        while theme_parent:
+            if hasattr(theme_parent, 'current_theme'):
+                self.is_dark = theme_parent.current_theme.get() == "dark"
+                break
+            theme_parent = getattr(theme_parent, 'parent', None) if hasattr(theme_parent, 'parent') else None
+        
+        # Set theme colors
+        if self.is_dark:
+            self.bg_color = "#2b2b2b"
+            self.text_bg = "#1e1e1e"
+            self.text_fg = "#d4d4d4"
+            self.select_bg = "#264f78"
+            self.search_highlight = "#515c6a"
+            self.current_highlight = "#b89a3e"
+            self.button_bg = "#404040"
+            self.button_fg = "#ffffff"
         else:
-            self.configure(bg="#f5f5f5")
-            text_bg = "#ffffff"
-            text_fg = "#000000"
-            select_bg = "#0078d7"
+            self.bg_color = "#f5f5f5"
+            self.text_bg = "#ffffff"
+            self.text_fg = "#000000"
+            self.select_bg = "#0078d7"
+            self.search_highlight = "#ffff00"
+            self.current_highlight = "#ff9900"
+            self.button_bg = "#e0e0e0"
+            self.button_fg = "#000000"
         
-        notebook = ttk.Notebook(self)
-        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.configure(bg=self.bg_color)
         
+        # Create search bar at top
+        search_frame = tk.Frame(self, bg=self.bg_color)
+        search_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        tk.Label(search_frame, text="Search:", bg=self.bg_color, 
+                fg=self.text_fg).pack(side=tk.LEFT, padx=5)
+        
+        self.search_var = tk.StringVar()
+        self.search_entry = tk.Entry(search_frame, textvariable=self.search_var,
+                                     bg=self.text_bg, fg=self.text_fg,
+                                     insertbackground=self.text_fg)
+        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        self.search_entry.bind('<Return>', lambda e: self.search_text())
+        
+        tk.Button(search_frame, text="Find", command=self.search_text,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        
+        tk.Button(search_frame, text="Next", command=self.find_next,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        
+        tk.Button(search_frame, text="Previous", command=self.find_previous,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        
+        self.search_status = tk.Label(search_frame, text="", bg=self.bg_color,
+                                      fg=self.text_fg)
+        self.search_status.pack(side=tk.LEFT, padx=10)
+        
+        # Create notebook for tabs
+        notebook_frame = tk.Frame(self, bg=self.bg_color)
+        notebook_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        # Style the notebook to match theme
+        style = ttk.Style()
+        if self.is_dark:
+            style.configure("Dark.TNotebook", background="#2b2b2b")
+            style.configure("Dark.TNotebook.Tab", background="#404040", foreground="#ffffff")
+            style.map("Dark.TNotebook.Tab",
+                     background=[("selected", "#505050")],
+                     foreground=[("selected", "#ffffff")])
+            notebook = ttk.Notebook(notebook_frame, style="Dark.TNotebook")
+        else:
+            notebook = ttk.Notebook(notebook_frame)
+        
+        notebook.pack(fill=tk.BOTH, expand=True)
+        notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+        self.notebook = notebook
+        
+        self.text_widgets = {}
+        
+        # Add INI file tab
         if ini_file and ini_file.exists():
-            ini_frame = ttk.Frame(notebook)
+            ini_frame = tk.Frame(notebook, bg=self.bg_color)
             notebook.add(ini_frame, text=ini_file.name)
             
             text = scrolledtext.ScrolledText(ini_frame, wrap=tk.WORD,
-                                            bg=text_bg, fg=text_fg,
-                                            insertbackground=text_fg,
-                                            selectbackground=select_bg,
-                                            selectforeground="#ffffff" if select_bg == "#0078d7" else "#ffffff")
+                                            bg=self.text_bg, fg=self.text_fg,
+                                            insertbackground=self.text_fg,
+                                            selectbackground=self.select_bg,
+                                            selectforeground="#ffffff",
+                                            font=("Consolas", 10))
             text.pack(fill=tk.BOTH, expand=True)
             
             with open(ini_file, 'r', encoding='utf-8', errors='ignore') as f:
                 text.insert(tk.END, f.read())
+            
+            text.configure(state='disabled')  # Make read-only
+            self.text_widgets['ini'] = text
         
+        # Add Lua file tab
         if lua_file and lua_file.exists():
-            lua_frame = ttk.Frame(notebook)
+            lua_frame = tk.Frame(notebook, bg=self.bg_color)
             notebook.add(lua_frame, text=lua_file.name)
             
             text = scrolledtext.ScrolledText(lua_frame, wrap=tk.WORD,
-                                            bg=text_bg, fg=text_fg,
-                                            insertbackground=text_fg,
-                                            selectbackground=select_bg,
-                                            selectforeground="#ffffff" if select_bg == "#0078d7" else "#ffffff")
+                                            bg=self.text_bg, fg=self.text_fg,
+                                            insertbackground=self.text_fg,
+                                            selectbackground=self.select_bg,
+                                            selectforeground="#ffffff",
+                                            font=("Consolas", 10))
             text.pack(fill=tk.BOTH, expand=True)
             
             with open(lua_file, 'r', encoding='utf-8', errors='ignore') as f:
                 text.insert(tk.END, f.read())
+            
+            text.configure(state='disabled')  # Make read-only
+            self.text_widgets['lua'] = text
         
-        btn_frame = ttk.Frame(self)
+        # Set current text widget
+        if self.text_widgets:
+            self.current_text_widget = list(self.text_widgets.values())[0]
+        
+        # Configure search highlight tags
+        for widget in self.text_widgets.values():
+            widget.tag_configure("search", background=self.search_highlight)
+            widget.tag_configure("current", background=self.current_highlight)
+        
+        # Bottom button frame
+        btn_frame = tk.Frame(self, bg=self.bg_color)
         btn_frame.pack(fill=tk.X, padx=10, pady=10)
-        ttk.Button(btn_frame, text="Close", command=self.destroy).pack(side=tk.RIGHT)
+        
+        tk.Button(btn_frame, text="Close", command=self.destroy,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.RIGHT)
+    
+    def on_tab_changed(self, event):
+        """Update current text widget when tab changes"""
+        tab_index = self.notebook.index(self.notebook.select())
+        tab_names = list(self.text_widgets.keys())
+        if tab_index < len(tab_names):
+            self.current_text_widget = self.text_widgets[tab_names[tab_index]]
+            # Re-search in new tab if there's a search query
+            if self.search_var.get():
+                self.search_text()
+    
+    def search_text(self):
+        """Search for text in current file"""
+        if not self.current_text_widget:
+            return
+        
+        query = self.search_var.get()
+        if not query:
+            self.search_status.config(text="Enter search text")
+            return
+        
+        # Clear previous highlights
+        self.current_text_widget.tag_remove("search", "1.0", tk.END)
+        self.current_text_widget.tag_remove("current", "1.0", tk.END)
+        
+        # Find all occurrences
+        self.search_positions = []
+        start_pos = "1.0"
+        
+        while True:
+            start_pos = self.current_text_widget.search(query, start_pos, 
+                                                       stopindex=tk.END, nocase=True)
+            if not start_pos:
+                break
+            
+            end_pos = f"{start_pos}+{len(query)}c"
+            self.search_positions.append(start_pos)
+            self.current_text_widget.tag_add("search", start_pos, end_pos)
+            start_pos = end_pos
+        
+        if self.search_positions:
+            self.current_search_index = 0
+            self.highlight_current_match()
+            self.search_status.config(text=f"Found {len(self.search_positions)} matches")
+        else:
+            self.search_status.config(text="No matches found")
+    
+    def highlight_current_match(self):
+        """Highlight and scroll to current match"""
+        if not self.search_positions:
+            return
+        
+        pos = self.search_positions[self.current_search_index]
+        query = self.search_var.get()
+        end_pos = f"{pos}+{len(query)}c"
+        
+        # Remove previous current highlight
+        self.current_text_widget.tag_remove("current", "1.0", tk.END)
+        
+        # Add current highlight
+        self.current_text_widget.tag_add("current", pos, end_pos)
+        
+        # Scroll to position
+        self.current_text_widget.see(pos)
+        
+        # Update status
+        self.search_status.config(text=f"Match {self.current_search_index + 1} of {len(self.search_positions)}")
+    
+    def find_next(self):
+        """Go to next search result"""
+        if not self.search_positions:
+            self.search_text()
+            return
+        
+        self.current_search_index = (self.current_search_index + 1) % len(self.search_positions)
+        self.highlight_current_match()
+    
+    def find_previous(self):
+        """Go to previous search result"""
+        if not self.search_positions:
+            return
+        
+        self.current_search_index = (self.current_search_index - 1) % len(self.search_positions)
+        self.highlight_current_match()
 
 
 if __name__ == "__main__":

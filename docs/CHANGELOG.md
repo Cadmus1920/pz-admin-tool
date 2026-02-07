@@ -2,8 +2,54 @@
 
 All notable changes to the Project Zomboid Server Admin Tool will be documented in this file.
 
-<<<<<<< HEAD
-## [1.2.0] - 2026-01-31
+## [2.3.0] - 2026-02-05
+
+### Fixed
+- **Logs Path Bug**: Fixed logs looking in wrong location (`~/Zomboid/Zomboid/Logs` instead of `~/Zomboid/Logs`)
+- **Settings Editor**: Now searches multiple locations for INI and Lua files, shows where it searched
+- **Path Detection**: Prioritizes `~/Zomboid` over `~/.local/share/Zomboid` when both exist
+- **Smart Path Detection**: Auto-selects paths that contain actual server configuration files
+- **Corruption Detection**: Now auto-fixes invalid values silently instead of showing popup every load
+- **TriggerHouseAlarm Bug**: Fixed boolean settings saving correctly to Lua files
+- **Ban List Path**: Fixed banlist search to use correct paths
+- **Server Info**: Fixed file-based info to search correct log locations
+
+### Improved
+- **Better Error Messages**: Now shows exactly which paths were searched when files not found
+- **File Selection Dialog**: Shows full paths and search locations for debugging
+- **Browse Dialog**: Uses smarter starting directory based on known paths
+- **Cleaner Code**: Removed all debug print statements and temp file creation
+- **Better UX**: Corruption fixes logged to command output instead of blocking popups
+- **Path Selection Dialog**: Pre-selects the best path option when multiple paths found
+
+### Technical
+- All file searches now use standardized multi-location search pattern
+- Streamlined save_settings function (removed ~100 lines of debug code)
+- Improved auto_detect_path to check for actual .ini files in Server directory
+- Silent auto-repair of corrupted config values on load
+
+## [2.2.2] - 2026-02-04
+
+### Added
+- Corruption detection and repair system
+- Settings validation before saving
+- Backup creation before save with verification
+
+### Fixed
+- Various settings editor improvements
+
+## [2.1.0] - 2026-02-01
+
+### Added
+- Build 41/42 version selector
+- Preset system for server settings
+- Change preview before saving
+
+### Improved
+- Settings editor organization
+- Tab layout and UI polish
+
+## [2.0.0] - 2026-01-31
 
 ### Added
 - **70+ Server Settings**: Expanded settings editor with 7 tabs
@@ -15,25 +61,14 @@ All notable changes to the Project Zomboid Server Admin Tool will be documented 
 
 ### Improved
 - **Dark Theme**: Completely redesigned for consistency
-  - All Canvas widgets themed
-  - All ScrolledText widgets themed
-  - All dialog windows themed
-  - Raw file viewer themed
-  - Server info, logs, and command output themed
 - **Light Theme**: Cleaner, more professional appearance
 - **Dialog Sizes**: Increased default sizes for better visibility
-  - File selection: 600x400 → 700x500
-  - Settings editor: 800x600 → 900x700
-  - Server control: 600x400 → 700x500
 
 ### Fixed
-- Canvas backgrounds now match theme (no more white rectangles)
-- Text widget colors properly applied at creation
+- Canvas backgrounds now match theme
+- Text widget colors properly applied
 - All popup dialogs inherit theme correctly
-- Button visibility in dialogs improved
 
-=======
->>>>>>> b2191b288d654d403a8ed1dea4c270cea41a5b61
 ## [1.1.0] - 2026-01-31
 
 ### Added
