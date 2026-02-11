@@ -15,157 +15,16 @@ import json
 import re
 import subprocess
 import webbrowser
+import logging
 from pathlib import Path
-from datetime import datetime
+from rcon import RCONClient
 
-
-class RCONClient:
-    """RCON client for communicating with Project Zomboid server"""
-    
-    SERVERDATA_AUTH = 3
-    SERVERDATA_AUTH_RESPONSE = 2
-    SERVERDATA_EXECCOMMAND = 2
-    SERVERDATA_RESPONSE_VALUE = 0
-    
-    def __init__(self, host, port, password):
-        self.host = host
-        self.port = port
-        self.password = password
-        self.sock = None
-        self.request_id = 0
-        self.authenticated = False
-        
-    def connect(self):
-        """Establish connection to RCON server and authenticate"""
-        try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.settimeout(10)
-            self.sock.connect((self.host, self.port))
-            
-            # Authenticate
-            self.request_id += 1
-            auth_id = self.request_id
-            
-            # CRITICAL: Body needs password + 2 null terminators (not 1!)
-            auth_body = self.password.encode('utf-8')
-            packet_data = auth_body + b'\x00\x00'  # Two null terminators
-            packet_size = 4 + 4 + len(packet_data)  # id + type + data
-            
-            packet = struct.pack('<i', packet_size)   # size
-            packet += struct.pack('<i', auth_id)      # id  
-            packet += struct.pack('<i', self.SERVERDATA_AUTH)  # type
-            packet += packet_data
-            
-            self.sock.sendall(packet)
-            
-            # Read first packet (might be empty SERVERDATA_RESPONSE_VALUE)
-            size_data = self._recv_all(4)
-            if not size_data:
-                raise Exception("Auth failed - no response")
-            
-            response_size = struct.unpack('<i', size_data)[0]
-            response_data = self._recv_all(response_size)
-            
-            if not response_data or len(response_data) < 8:
-                raise Exception("Auth failed - incomplete response")
-            
-            first_packet_type = struct.unpack('<i', response_data[4:8])[0]
-            
-            # If first packet is empty response (type 0), read the auth response
-            if first_packet_type == self.SERVERDATA_RESPONSE_VALUE:
-                size_data = self._recv_all(4)
-                if not size_data:
-                    raise Exception("Auth failed - no auth response")
-                
-                response_size = struct.unpack('<i', size_data)[0]
-                response_data = self._recv_all(response_size)
-                
-                if not response_data or len(response_data) < 4:
-                    raise Exception("Auth failed - incomplete auth response")
-            
-            # Check auth result
-            response_id = struct.unpack('<i', response_data[:4])[0]
-            if response_id == -1:
-                raise Exception("Authentication failed - wrong password")
-            
-            self.authenticated = True
-            return True
-            
-        except socket.timeout:
-            raise Exception("Connection timed out - check host and port")
-        except ConnectionRefusedError:
-            raise Exception("Connection refused - is RCON enabled and server running?")
-        except Exception as e:
-            if self.sock:
-                self.sock.close()
-                self.sock = None
-            raise
-    
-    def disconnect(self):
-        """Close RCON connection"""
-        if self.sock:
-            try:
-                self.sock.close()
-            except (OSError, socket.error):
-                pass  # Socket already closed, ignore
-            self.sock = None
-            self.authenticated = False
-    
-    def execute_command(self, command):
-        """Execute a command on the server using existing connection"""
-        if not self.sock or not self.authenticated:
-            raise Exception("Not connected to server")
-        
-        try:
-            # Send command
-            self.request_id += 1
-            cmd_id = self.request_id
-            
-            # Build command packet with 2 null terminators
-            cmd_body = command.encode('utf-8')
-            packet_data = cmd_body + b'\x00\x00'
-            packet_size = 4 + 4 + len(packet_data)
-            
-            packet = struct.pack('<i', packet_size)
-            packet += struct.pack('<i', cmd_id)
-            packet += struct.pack('<i', self.SERVERDATA_EXECCOMMAND)
-            packet += packet_data
-            
-            self.sock.sendall(packet)
-            
-            # Read response
-            response_text = ""
-            
-            size_data = self._recv_all(4)
-            if size_data:
-                response_size = struct.unpack('<i', size_data)[0]
-                response_data = self._recv_all(response_size)
-                
-                if response_data and len(response_data) >= 8:
-                    response_text = response_data[8:].rstrip(b'\x00').decode('utf-8', errors='ignore')
-            
-            return response_text
-            
-        except (BrokenPipeError, ConnectionResetError):
-            self.authenticated = False
-            raise Exception("Connection lost - please reconnect")
-        except socket.timeout:
-            raise Exception("Command timed out")
-        except Exception as e:
-            raise Exception(f"Command failed: {str(e)}")
-    
-    def _recv_all(self, n):
-        """Receive exactly n bytes from socket"""
-        data = b''
-        while len(data) < n:
-            try:
-                chunk = self.sock.recv(n - len(data))
-                if not chunk:
-                    return None
-                data += chunk
-            except socket.error:
-                return None
-        return data
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class PZServerAdmin(tk.Tk):
@@ -546,7 +405,7 @@ class PZServerAdmin(tk.Tk):
             with open(config_file, 'w') as f:
                 json.dump(config, f, indent=2)
         except (IOError, OSError) as e:
-            pass  # Silently fail if can't save preferences
+            logger.debug("Failed to save appearance settings: %s", e)
     
     def load_appearance_settings(self):
         """Load appearance settings from file"""
@@ -557,13 +416,13 @@ class PZServerAdmin(tk.Tk):
                     config = json.load(f)
                     self.current_theme.set(config.get('theme', 'light'))
                     self.font_size.set(config.get('font_size', 9))
-        except (IOError, OSError, json.JSONDecodeError):
-            pass  # Use defaults if can't load preferences
+        except (IOError, OSError, json.JSONDecodeError) as e:
+            logger.debug("Failed to load appearance settings, using defaults: %s", e)
     
     def show_about(self):
         """Show about dialog"""
         about_text = """Project Zomboid Server Administration Tool
-Version 2.3.0
+Version 2.4.0
 
 A comprehensive GUI tool for managing Project Zomboid dedicated servers.
 
@@ -591,7 +450,13 @@ Created with ❤️ for the PZ community
     
     def get_text_colors(self):
         """Get text widget colors based on theme"""
-        theme = self.current_theme.get()
+        # Prefer parent's theme variable (inherited from main app)
+        if hasattr(self, 'parent') and hasattr(self.parent, 'current_theme'):
+            theme = self.parent.current_theme.get()
+        elif hasattr(self, 'current_theme'):
+            theme = self.current_theme.get()
+        else:
+            theme = 'light'
         if theme == "dark":
             return {
                 'bg': "#404040",
@@ -905,21 +770,21 @@ Created with ❤️ for the PZ community
             error_detail = traceback.format_exc()
             self.sftp_status_label.config(text="❌ Connection failed", foreground="red")
             messagebox.showerror("Connection Error", f"Failed to connect:\n{str(e)}", parent=self)
-            print(f"SFTP connection error: {error_detail}")
+            logger.error("SFTP connection error: %s", error_detail)
     
     def close_sftp_connection(self):
         """Close SFTP connection if open"""
         if self.sftp_client:
             try:
                 self.sftp_client.close()
-            except:
+            except Exception:
                 pass
             self.sftp_client = None
         
         if self.ssh_client:
             try:
                 self.ssh_client.close()
-            except:
+            except Exception:
                 pass
             self.ssh_client = None
         
@@ -1246,11 +1111,11 @@ Created with ❤️ for the PZ community
     def connect_to_server(self):
         """Connect to the RCON server"""
         # Check if already connected - if so, disconnect
-        if self.rcon and self.connect_btn.cget('text') == 'Disconnect':
+        if self.rcon and getattr(self.rcon, 'authenticated', False):
             self.rcon.disconnect()
             self.rcon = None
-            self.status_label.config(text="Status: Disconnected", foreground="red")
-            self.connect_btn.config(text="Connect")
+            self.status_label.config(text="⭕ Disconnected", foreground="red")
+            self.connect_btn.config(text="🔗 Connect")
             return
         
         try:
@@ -1602,8 +1467,8 @@ Screen:
                     stop_entry.insert(0, config.get('stop_cmd', ''))
                     restart_entry.insert(0, config.get('restart_cmd', ''))
                     status_entry.insert(0, config.get('status_cmd', ''))
-        except (IOError, OSError, json.JSONDecodeError):
-            pass  # Use empty fields if can't load config
+        except (IOError, OSError, json.JSONDecodeError) as e:
+            logger.debug("Failed to load server control config, using defaults: %s", e)
         
         # Save button
         def save_commands():
@@ -1973,7 +1838,7 @@ Screen:
             with open(config_file, 'w') as f:
                 json.dump(state, f, indent=2)
         except (IOError, OSError) as e:
-            pass  # Non-critical if save fails
+            logger.debug("Failed to save restart timer state: %s", e)
     
     def _load_restart_timer_state(self):
         """Load restart timer state from file"""
@@ -2199,16 +2064,30 @@ Screen:
             messagebox.showwarning("No Server Path", "Please set the server path first")
             return
         
-        # Find the .ini file
+        # Find the .ini file - search multiple locations
         server_path = Path(self.server_path.get())
-        server_dir = server_path / 'Server'
+        
+        search_dirs = [
+            server_path / 'Server',              # ~/Zomboid/Server
+            server_path,                          # Direct path if user pointed to Server folder
+            Path.home() / 'Zomboid' / 'Server',  # Fallback to home
+            Path.home() / '.local' / 'share' / 'Zomboid' / 'Server',  # Alternative Linux
+        ]
         
         ini_files = []
-        if server_dir.exists():
-            ini_files = list(server_dir.glob('*.ini'))
+        for search_dir in search_dirs:
+            if search_dir.exists():
+                found = list(search_dir.glob('*.ini'))
+                for f in found:
+                    if f not in ini_files:
+                        ini_files.append(f)
         
         if not ini_files:
-            messagebox.showerror("Error", "Could not find server .ini file in Server directory")
+            searched = "\n".join(f"  • {d}" for d in search_dirs[:3] if d.exists() or d == search_dirs[0])
+            messagebox.showerror("Error", 
+                f"Could not find server .ini file.\n\n"
+                f"Searched in:\n{searched}\n\n"
+                f"Server path: {server_path}")
             return
         
         # If only one file, use it; otherwise let user choose
@@ -2234,26 +2113,37 @@ Screen:
         try:
             server_path = Path(self.server_path.get())
             
-            # Look for server config file
-            config_files = ['Server/servertest.ini', 'servertest.ini']
+            # Search multiple locations for config file
+            config_locations = [
+                server_path / 'Server',              # ~/Zomboid/Server
+                server_path,                          # Direct path
+                Path.home() / 'Zomboid' / 'Server',  # Fallback
+                Path.home() / '.local' / 'share' / 'Zomboid' / 'Server',
+            ]
             
             mods = []
             workshop_ids = []
+            config_found = None
             
-            for config_file in config_files:
-                config_path = server_path / config_file
-                if config_path.exists():
-                    with open(config_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        content = f.read()
-                        
-                        # Parse mods and workshop IDs
-                        for line in content.split('\n'):
-                            if line.startswith('Mods='):
-                                mods_str = line.split('=')[1].strip()
-                                mods = [m.strip() for m in mods_str.split(';') if m.strip()]
-                            elif line.startswith('WorkshopItems='):
-                                workshop_str = line.split('=')[1].strip()
-                                workshop_ids = [w.strip() for w in workshop_str.split(';') if w.strip()]
+            for config_dir in config_locations:
+                if config_dir.exists():
+                    for ini_file in config_dir.glob('*.ini'):
+                        with open(ini_file, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                            
+                            # Parse mods and workshop IDs
+                            for line in content.split('\n'):
+                                if line.startswith('Mods='):
+                                    mods_str = line.split('=')[1].strip()
+                                    mods = [m.strip() for m in mods_str.split(';') if m.strip()]
+                                elif line.startswith('WorkshopItems='):
+                                    workshop_str = line.split('=')[1].strip()
+                                    workshop_ids = [w.strip() for w in workshop_str.split(';') if w.strip()]
+                            
+                            if mods or workshop_ids:
+                                config_found = ini_file
+                                break
+                if config_found:
                     break
             
             # Populate mods list (left panel) - clean display
@@ -2265,10 +2155,14 @@ Screen:
                 self.workshop_tree.insert('', tk.END, text=str(i+1), values=(workshop_id,))
             
             # Simple summary
-            self.log_command_output(
-                f"Mods: {len(mods)} | Workshop IDs: {len(workshop_ids)}\n"
-                f"Double-click any Workshop ID to view on Steam Workshop."
-            )
+            if config_found:
+                self.log_command_output(
+                    f"Mods: {len(mods)} | Workshop IDs: {len(workshop_ids)}\n"
+                    f"Config: {config_found}\n"
+                    f"Double-click any Workshop ID to view on Steam Workshop."
+                )
+            else:
+                self.log_command_output("No server config file found with mod information.")
                     
         except Exception as e:
             messagebox.showerror("Error", f"Failed to read mods: {str(e)}")
@@ -2994,7 +2888,6 @@ Screen:
         config = {
             'host': self.host_entry.get(),
             'port': self.port_entry.get(),
-            'password': self.password_entry.get(),
             'server_path': self.server_path.get(),
             'pz_version': self.pz_version.get()
         }
@@ -3002,7 +2895,7 @@ Screen:
         try:
             with open('pz_admin_config.json', 'w') as f:
                 json.dump(config, f, indent=4)
-            messagebox.showinfo("Success", "Configuration saved!", parent=self)
+            messagebox.showinfo("Success", "Configuration saved! (password not stored)", parent=self)
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save config: {str(e)}", parent=self)
             
@@ -3018,17 +2911,13 @@ Screen:
                 
                 self.port_entry.delete(0, tk.END)
                 self.port_entry.insert(0, config.get('port', '16261'))
-                
-                self.password_entry.delete(0, tk.END)
-                self.password_entry.insert(0, config.get('password', ''))
-                
                 self.server_path.set(config.get('server_path', ''))
                 
                 # Load PZ version (default to build42)
                 pz_ver = config.get('pz_version', 'build42')
                 self.pz_version.set(pz_ver)
-        except (IOError, OSError, json.JSONDecodeError):
-            pass  # Use defaults if can't load config
+        except (IOError, OSError, json.JSONDecodeError) as e:
+            logger.debug("Failed to load main config, using defaults: %s", e)
     
     def open_settings_editor(self):
         """Open the settings editor window"""
@@ -3307,6 +3196,16 @@ class SettingsEditorWindow(tk.Toplevel):
     
     def create_ui(self):
         """Create the settings editor UI"""
+        # IMPORTANT: Pack buttons FIRST at bottom so they're always visible
+        btn_frame = ttk.Frame(self)
+        btn_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+        
+        ttk.Button(btn_frame, text="💾 Save Changes", command=self.save_settings, 
+                  style='Accent.TButton').pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="🔄 Reload", command=self.load_settings).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="📄 View Raw Files", command=self.view_raw_files).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Close", command=self.destroy).pack(side=tk.RIGHT, padx=5)
+        
         # Preset selector at top
         preset_frame = ttk.LabelFrame(self, text="🎮 Load Preset", padding=10)
         preset_frame.pack(fill=tk.X, padx=10, pady=10)
@@ -3400,16 +3299,6 @@ class SettingsEditorWindow(tk.Toplevel):
         nature_frame = ttk.Frame(notebook)
         notebook.add(nature_frame, text="🐄 Animals & Nature")
         self.create_nature_settings(nature_frame)
-        
-        # Buttons at bottom
-        btn_frame = ttk.Frame(self)
-        btn_frame.pack(fill=tk.X, padx=10, pady=10)
-        
-        ttk.Button(btn_frame, text="Save Changes", command=self.save_settings, 
-                  style='Accent.TButton').pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Reload", command=self.load_settings).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="View Raw Files", command=self.view_raw_files).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Close", command=self.destroy).pack(side=tk.RIGHT, padx=5)
     
     def create_basic_settings(self, parent):
         """Create basic server settings controls"""
@@ -5647,14 +5536,14 @@ class SettingsEditorWindow(tk.Toplevel):
                             widget_info['var'].set(choice_name)
                             self.original_values[key] = suggested_fix
                             break
-                except:
+                except Exception:
                     pass
             
             elif widget_info['type'] == 'slider':
                 try:
                     widget_info['var'].set(float(suggested_fix))
                     self.original_values[key] = suggested_fix
-                except:
+                except Exception:
                     pass
     
     def save_settings(self):
@@ -5876,7 +5765,7 @@ class SettingsEditorWindow(tk.Toplevel):
                 if old_normalized != new_normalized:
                     changes.append((key, old_value, new_value))
             
-            except:
+            except Exception:
                 continue
         
         return changes
@@ -5923,7 +5812,7 @@ class ModManagerWindow(tk.Toplevel):
         self.server_path = Path(server_path)
         
         self.title("Mod Manager - Simple Editor")
-        self.geometry("1000x700")  # Increased from 900x600
+        self.geometry("1100x750")
         
         # Apply theme from parent
         if hasattr(parent, 'current_theme'):
@@ -6202,7 +6091,7 @@ class ModManagerWindow(tk.Toplevel):
 
 
 class RawFileViewer(tk.Toplevel):
-    """Text viewer for raw config files with search functionality"""
+    """Text editor for raw config files with search and edit functionality"""
     
     def __init__(self, parent, ini_file, lua_file):
         super().__init__(parent)
@@ -6212,9 +6101,10 @@ class RawFileViewer(tk.Toplevel):
         self.current_text_widget = None
         self.search_positions = []
         self.current_search_index = 0
+        self.modified = {'ini': False, 'lua': False}
         
-        self.title("Raw Configuration Files")
-        self.geometry("1000x800")
+        self.title("Raw Configuration Files - Editor")
+        self.geometry("1100x850")
         
         # Get theme from parent or parent's parent
         self.is_dark = False
@@ -6249,18 +6139,55 @@ class RawFileViewer(tk.Toplevel):
         
         self.configure(bg=self.bg_color)
         
-        # Create search bar at top
+        # Create toolbar at top
+        toolbar = tk.Frame(self, bg=self.bg_color)
+        toolbar.pack(fill=tk.X, padx=10, pady=5)
+        
+        # Edit buttons
+        tk.Button(toolbar, text="💾 Save", command=self.save_current_file,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        tk.Button(toolbar, text="💾 Save All", command=self.save_all_files,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        
+        ttk.Separator(toolbar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=8, pady=2)
+        
+        tk.Button(toolbar, text="✂️ Cut", command=self.cut_text,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        tk.Button(toolbar, text="📋 Copy", command=self.copy_text,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        tk.Button(toolbar, text="📄 Paste", command=self.paste_text,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        
+        ttk.Separator(toolbar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=8, pady=2)
+        
+        tk.Button(toolbar, text="↩️ Undo", command=self.undo_text,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        tk.Button(toolbar, text="↪️ Redo", command=self.redo_text,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        
+        # Status label
+        self.status_label = tk.Label(toolbar, text="", bg=self.bg_color, fg=self.text_fg)
+        self.status_label.pack(side=tk.RIGHT, padx=10)
+        
+        # Create search bar
         search_frame = tk.Frame(self, bg=self.bg_color)
         search_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        tk.Label(search_frame, text="Search:", bg=self.bg_color, 
+        tk.Label(search_frame, text="🔍 Search:", bg=self.bg_color, 
                 fg=self.text_fg).pack(side=tk.LEFT, padx=5)
         
         self.search_var = tk.StringVar()
         self.search_entry = tk.Entry(search_frame, textvariable=self.search_var,
                                      bg=self.text_bg, fg=self.text_fg,
-                                     insertbackground=self.text_fg)
-        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+                                     insertbackground=self.text_fg, width=30)
+        self.search_entry.pack(side=tk.LEFT, padx=5)
         self.search_entry.bind('<Return>', lambda e: self.search_text())
         
         tk.Button(search_frame, text="Find", command=self.search_text,
@@ -6271,7 +6198,27 @@ class RawFileViewer(tk.Toplevel):
                  bg=self.button_bg, fg=self.button_fg,
                  activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
         
-        tk.Button(search_frame, text="Previous", command=self.find_previous,
+        tk.Button(search_frame, text="Prev", command=self.find_previous,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        
+        ttk.Separator(search_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=8, pady=2)
+        
+        # Replace
+        tk.Label(search_frame, text="Replace:", bg=self.bg_color, 
+                fg=self.text_fg).pack(side=tk.LEFT, padx=5)
+        
+        self.replace_var = tk.StringVar()
+        self.replace_entry = tk.Entry(search_frame, textvariable=self.replace_var,
+                                      bg=self.text_bg, fg=self.text_fg,
+                                      insertbackground=self.text_fg, width=20)
+        self.replace_entry.pack(side=tk.LEFT, padx=5)
+        
+        tk.Button(search_frame, text="Replace", command=self.replace_current,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
+        
+        tk.Button(search_frame, text="Replace All", command=self.replace_all,
                  bg=self.button_bg, fg=self.button_fg,
                  activebackground=self.select_bg).pack(side=tk.LEFT, padx=2)
         
@@ -6300,48 +6247,66 @@ class RawFileViewer(tk.Toplevel):
         self.notebook = notebook
         
         self.text_widgets = {}
+        self.file_paths = {}
         
         # Add INI file tab
         if ini_file and ini_file.exists():
             ini_frame = tk.Frame(notebook, bg=self.bg_color)
-            notebook.add(ini_frame, text=ini_file.name)
+            notebook.add(ini_frame, text=f"📄 {ini_file.name}")
             
-            text = scrolledtext.ScrolledText(ini_frame, wrap=tk.WORD,
+            text = scrolledtext.ScrolledText(ini_frame, wrap=tk.NONE,
                                             bg=self.text_bg, fg=self.text_fg,
                                             insertbackground=self.text_fg,
                                             selectbackground=self.select_bg,
                                             selectforeground="#ffffff",
-                                            font=("Consolas", 10))
+                                            font=("Consolas", 10),
+                                            undo=True)
             text.pack(fill=tk.BOTH, expand=True)
+            
+            # Add horizontal scrollbar
+            h_scroll = ttk.Scrollbar(ini_frame, orient=tk.HORIZONTAL, command=text.xview)
+            h_scroll.pack(fill=tk.X)
+            text.configure(xscrollcommand=h_scroll.set)
             
             with open(ini_file, 'r', encoding='utf-8', errors='ignore') as f:
                 text.insert(tk.END, f.read())
             
-            text.configure(state='disabled')  # Make read-only
+            text.edit_reset()  # Clear undo stack after loading
+            text.bind('<<Modified>>', lambda e, k='ini': self.on_text_modified(k))
             self.text_widgets['ini'] = text
+            self.file_paths['ini'] = ini_file
         
         # Add Lua file tab
         if lua_file and lua_file.exists():
             lua_frame = tk.Frame(notebook, bg=self.bg_color)
-            notebook.add(lua_frame, text=lua_file.name)
+            notebook.add(lua_frame, text=f"📄 {lua_file.name}")
             
-            text = scrolledtext.ScrolledText(lua_frame, wrap=tk.WORD,
+            text = scrolledtext.ScrolledText(lua_frame, wrap=tk.NONE,
                                             bg=self.text_bg, fg=self.text_fg,
                                             insertbackground=self.text_fg,
                                             selectbackground=self.select_bg,
                                             selectforeground="#ffffff",
-                                            font=("Consolas", 10))
+                                            font=("Consolas", 10),
+                                            undo=True)
             text.pack(fill=tk.BOTH, expand=True)
+            
+            # Add horizontal scrollbar
+            h_scroll = ttk.Scrollbar(lua_frame, orient=tk.HORIZONTAL, command=text.xview)
+            h_scroll.pack(fill=tk.X)
+            text.configure(xscrollcommand=h_scroll.set)
             
             with open(lua_file, 'r', encoding='utf-8', errors='ignore') as f:
                 text.insert(tk.END, f.read())
             
-            text.configure(state='disabled')  # Make read-only
+            text.edit_reset()  # Clear undo stack after loading
+            text.bind('<<Modified>>', lambda e, k='lua': self.on_text_modified(k))
             self.text_widgets['lua'] = text
+            self.file_paths['lua'] = lua_file
         
         # Set current text widget
         if self.text_widgets:
             self.current_text_widget = list(self.text_widgets.values())[0]
+            self.current_key = list(self.text_widgets.keys())[0]
         
         # Configure search highlight tags
         for widget in self.text_widgets.values():
@@ -6352,16 +6317,174 @@ class RawFileViewer(tk.Toplevel):
         btn_frame = tk.Frame(self, bg=self.bg_color)
         btn_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        tk.Button(btn_frame, text="Close", command=self.destroy,
+        tk.Button(btn_frame, text="💾 Save All & Close", command=self.save_and_close,
+                 bg=self.button_bg, fg=self.button_fg,
+                 activebackground=self.select_bg).pack(side=tk.LEFT, padx=5)
+        
+        tk.Button(btn_frame, text="Close", command=self.on_close,
                  bg=self.button_bg, fg=self.button_fg,
                  activebackground=self.select_bg).pack(side=tk.RIGHT)
+        
+        # Bind keyboard shortcuts
+        self.bind('<Control-s>', lambda e: self.save_current_file())
+        self.bind('<Control-S>', lambda e: self.save_all_files())
+        self.bind('<Control-f>', lambda e: self.search_entry.focus_set())
+        self.bind('<Control-z>', lambda e: self.undo_text())
+        self.bind('<Control-y>', lambda e: self.redo_text())
+        
+        # Handle window close
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+    
+    def on_text_modified(self, key):
+        """Track when text is modified"""
+        widget = self.text_widgets.get(key)
+        if widget and widget.edit_modified():
+            self.modified[key] = True
+            self.update_status()
+            widget.edit_modified(False)
+    
+    def update_status(self):
+        """Update status label to show modified state"""
+        modified_files = [k for k, v in self.modified.items() if v]
+        if modified_files:
+            self.status_label.config(text="⚠️ Unsaved changes", fg="orange")
+        else:
+            self.status_label.config(text="✓ Saved", fg="green")
+    
+    def cut_text(self):
+        """Cut selected text"""
+        if self.current_text_widget:
+            self.current_text_widget.event_generate("<<Cut>>")
+    
+    def copy_text(self):
+        """Copy selected text"""
+        if self.current_text_widget:
+            self.current_text_widget.event_generate("<<Copy>>")
+    
+    def paste_text(self):
+        """Paste text from clipboard"""
+        if self.current_text_widget:
+            self.current_text_widget.event_generate("<<Paste>>")
+    
+    def undo_text(self):
+        """Undo last edit"""
+        if self.current_text_widget:
+            try:
+                self.current_text_widget.edit_undo()
+            except tk.TclError:
+                pass  # Nothing to undo
+    
+    def redo_text(self):
+        """Redo last undone edit"""
+        if self.current_text_widget:
+            try:
+                self.current_text_widget.edit_redo()
+            except tk.TclError:
+                pass  # Nothing to redo
+    
+    def save_current_file(self):
+        """Save the currently active file"""
+        if not self.current_text_widget or not hasattr(self, 'current_key'):
+            return
+        
+        key = self.current_key
+        file_path = self.file_paths.get(key)
+        if file_path:
+            try:
+                content = self.current_text_widget.get('1.0', tk.END)
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(content.rstrip('\n'))
+                self.modified[key] = False
+                self.update_status()
+                self.search_status.config(text=f"✓ Saved {file_path.name}")
+            except Exception as e:
+                messagebox.showerror("Save Error", f"Failed to save {file_path.name}:\n{e}")
+    
+    def save_all_files(self):
+        """Save all modified files"""
+        saved = []
+        for key, widget in self.text_widgets.items():
+            file_path = self.file_paths.get(key)
+            if file_path:
+                try:
+                    content = widget.get('1.0', tk.END)
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(content.rstrip('\n'))
+                    self.modified[key] = False
+                    saved.append(file_path.name)
+                except Exception as e:
+                    messagebox.showerror("Save Error", f"Failed to save {file_path.name}:\n{e}")
+        
+        self.update_status()
+        if saved:
+            self.search_status.config(text=f"✓ Saved {', '.join(saved)}")
+    
+    def save_and_close(self):
+        """Save all files and close"""
+        self.save_all_files()
+        self.destroy()
+    
+    def on_close(self):
+        """Handle window close - check for unsaved changes"""
+        if any(self.modified.values()):
+            result = messagebox.askyesnocancel("Unsaved Changes", 
+                "You have unsaved changes.\n\nSave before closing?")
+            if result is True:  # Yes
+                self.save_all_files()
+                self.destroy()
+            elif result is False:  # No
+                self.destroy()
+            # Cancel - do nothing
+        else:
+            self.destroy()
+    
+    def replace_current(self):
+        """Replace current search match"""
+        if not self.search_positions or not self.current_text_widget:
+            return
+        
+        pos = self.search_positions[self.current_search_index]
+        query = self.search_var.get()
+        replacement = self.replace_var.get()
+        end_pos = f"{pos}+{len(query)}c"
+        
+        self.current_text_widget.delete(pos, end_pos)
+        self.current_text_widget.insert(pos, replacement)
+        
+        # Re-search to update positions
+        self.search_text()
+    
+    def replace_all(self):
+        """Replace all matches"""
+        if not self.current_text_widget:
+            return
+        
+        query = self.search_var.get()
+        replacement = self.replace_var.get()
+        
+        if not query:
+            return
+        
+        content = self.current_text_widget.get('1.0', tk.END)
+        count = content.count(query)
+        
+        if count == 0:
+            self.search_status.config(text="No matches to replace")
+            return
+        
+        new_content = content.replace(query, replacement)
+        self.current_text_widget.delete('1.0', tk.END)
+        self.current_text_widget.insert('1.0', new_content)
+        
+        self.search_status.config(text=f"Replaced {count} occurrences")
     
     def on_tab_changed(self, event):
         """Update current text widget when tab changes"""
         tab_index = self.notebook.index(self.notebook.select())
         tab_names = list(self.text_widgets.keys())
         if tab_index < len(tab_names):
-            self.current_text_widget = self.text_widgets[tab_names[tab_index]]
+            self.current_key = tab_names[tab_index]
+            self.current_text_widget = self.text_widgets[self.current_key]
             # Re-search in new tab if there's a search query
             if self.search_var.get():
                 self.search_text()

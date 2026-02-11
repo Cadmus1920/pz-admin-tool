@@ -2,6 +2,34 @@
 
 All notable changes to the Project Zomboid Server Admin Tool will be documented in this file.
 
+## [2.4.0] - 2026-02-10
+
+### Added
+- **Modular Architecture**: Extracted RCON protocol into separate `rcon.py` module for better code organization
+- **Logging System**: Comprehensive logging throughout RCON client and main application for debugging
+- **Utilities Module**: New `utils.py` with reusable file parsing and path detection functions
+- **Test Suite**: 5 test suites covering RCON packets, socket handling, file parsing, and integration
+
+### Improved
+- **Code Quality**: Better separation of concerns with modular design
+- **Maintainability**: Protocol logic now isolated and independently testable
+- **Error Handling**: Explicit exception handling with detailed logging instead of silent failures
+- **Documentation**: Comprehensive docstrings explaining RCON protocol implementation
+
+### Security
+- **Password Handling**: Ensured passwords are never persisted in config files (no behavioral change, but reinforced)
+
+### Fixed
+- **State Detection**: Changed from string comparison of button text to boolean `rcon.authenticated` check
+- **Theme Reference**: Fixed SettingsEditorWindow accessing parent theme correctly
+
+### Technical
+- All RCON packet operations tested with unit tests
+- Socket recv_all behavior validated for partial reads and EOF
+- Mods/banlist file parsing tested
+- Integration test with mock RCON server for full auth and command flow
+- GUI smoke test validates main application still functional
+
 ## [2.3.0] - 2026-02-05
 
 ### Fixed
