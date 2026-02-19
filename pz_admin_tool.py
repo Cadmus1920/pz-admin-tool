@@ -16,8 +16,10 @@ import re
 import subprocess
 import webbrowser
 import logging
+from datetime import datetime
 from pathlib import Path
 from rcon import RCONClient
+from utils import parse_mods_and_workshop, parse_banlist, find_config_file, find_log_file, find_server_path
 
 # Set up logging
 logging.basicConfig(
@@ -388,6 +390,12 @@ class PZServerAdmin(tk.Tk):
         text_font = font.nametofont("TkTextFont")
         text_font.configure(size=size)
         
+        # Configure ttk.Treeview style for proper row heights with larger fonts
+        style = ttk.Style()
+        # Set larger rowheight for ttk treeviews when font is large
+        if size >= 11:
+            style.configure('Treeview', rowheight=int(size * 2.2))
+        
         # Force update all widgets
         self.update_idletasks()
         
@@ -422,7 +430,7 @@ class PZServerAdmin(tk.Tk):
     def show_about(self):
         """Show about dialog"""
         about_text = """Project Zomboid Server Administration Tool
-Version 2.4.0
+Version 2.4.3
 
 A comprehensive GUI tool for managing Project Zomboid dedicated servers.
 
@@ -732,7 +740,6 @@ Created with ❤️ for the PZ community
             self.close_sftp_connection()
             
             # Create SSH client
-            import paramiko
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             
@@ -1114,8 +1121,7 @@ Created with ❤️ for the PZ community
         if self.rcon and getattr(self.rcon, 'authenticated', False):
             self.rcon.disconnect()
             self.rcon = None
-            self.status_label.config(text="⭕ Disconnected", foreground="red")
-            self.connect_btn.config(text="🔗 Connect")
+            self.update_ui_state()
             return
         
         try:
@@ -1141,23 +1147,112 @@ Created with ❤️ for the PZ community
             self.rcon = RCONClient(host, port, password)
             self.rcon.connect()
             
-            self.status_label.config(text="✅ Connected", foreground="green")
-            self.connect_btn.config(text="Disconnect")
-            messagebox.showinfo("Success", "Connected to server successfully!\n\nConnection will remain open for commands.")
+            self.notify_success("Connected", "Connected to server successfully!\n\nConnection will remain open for commands.")
             
-            # Auto-refresh initial data
+            # Update UI and auto-refresh
+            self.update_ui_state()
             self.refresh_all()
             
         except Exception as e:
             error_msg = str(e)
-            messagebox.showerror("Connection Error", error_msg)
-            self.status_label.config(text="Status: Connection Failed", foreground="red")
+            self.notify_error("Connection Error", error_msg)
             self.rcon = None
+            self.update_ui_state()
+            logger.error("Connection failed: %s", error_msg)
             
+    def _ensure_connected(self, show_warning=True):
+        """Check if connected to RCON server.
+        
+        Args:
+            show_warning: If True, show warning dialog if not connected
+            
+        Returns:
+            bool: True if connected and authenticated, False otherwise
+        """
+        is_connected = self.rcon and getattr(self.rcon, 'authenticated', False)
+        if not is_connected and show_warning:
+            messagebox.showwarning("Not Connected", "Please connect to the server first")
+            logger.warning("Command attempted without connection")
+        return is_connected
+    
+    def _send_server_message(self, message, log_output=True):
+        """Send a message to all connected players via RCON.
+        
+        Handles formatting (space-to-underscore conversion) and error logging.
+        
+        Args:
+            message: Message text to send
+            log_output: If True, log to command output
+            
+        Returns:
+            str: Server response, or None if error
+        """
+        if not self._ensure_connected(show_warning=False):
+            logger.warning("Cannot send message - not connected: %s", message)
+            return None
+        
+        try:
+            safe_message = message.replace(' ', '_')
+            response = self.rcon.execute_command(f'servermsg "{safe_message}"')
+            if log_output:
+                self.log_command_output(f"Broadcast: {message}\nResponse: {response}")
+            logger.info("Server message sent: %s", message)
+            return response
+        except Exception as e:
+            logger.error("Failed to send server message: %s - %s", message, e)
+            return None
+    
+    def update_ui_state(self):
+        """Update UI element states based on connection status.
+        
+        Updates the status indicator to show connection state and provide
+        visual feedback to the user.
+        """
+        is_connected = self._ensure_connected(show_warning=False)
+        
+        # Update status label appearance with animation effect
+        if is_connected:
+            self.status_label.config(text="✅ Connected", foreground="green", font=('TkDefaultFont', 10, 'bold'))
+            self.connect_btn.config(text="🔌 Disconnect", style='Danger.TButton')
+            logger.info("UI updated: Connected state")
+        else:
+            self.status_label.config(text="⭕ Disconnected", foreground="red", font=('TkDefaultFont', 10, 'bold'))
+            self.connect_btn.config(text="🔗 Connect", style='Accent.TButton')
+            logger.info("UI updated: Disconnected state")
+    
+    def notify_success(self, title, message):
+        """Show a success notification with styled appearance.
+        
+        Args:
+            title: Notification title
+            message: Notification message body
+        """
+        messagebox.showinfo(f"✅ {title}", message)
+        logger.info("Success: %s - %s", title, message)
+    
+    def notify_error(self, title, message):
+        """Show an error notification with styled appearance.
+        
+        Args:
+            title: Notification title
+            message: Notification message body
+        """
+        messagebox.showerror(f"❌ {title}", message)
+        logger.error("Error: %s - %s", title, message)
+    
+    def notify_warning(self, title, message):
+        """Show a warning notification with styled appearance.
+        
+        Args:
+            title: Notification title
+            message: Notification message body
+        """
+        messagebox.showwarning(f"⚠️ {title}", message)
+        logger.warning("Warning: %s - %s", title, message)
+    
     def refresh_players(self):
         """Refresh the players list"""
-        if not self.rcon:
-            messagebox.showwarning("Not Connected", "Please connect to the server first")
+        if not self._ensure_connected():
             return
         
         try:
@@ -1934,8 +2029,7 @@ Screen:
         
     def quick_command(self, cmd):
         """Execute a quick command"""
-        if not self.rcon:
-            messagebox.showwarning("Not Connected", "Please connect to the server first")
+        if not self._ensure_connected():
             return
         
         try:
@@ -1943,18 +2037,15 @@ Screen:
             self.log_command_output(f"Command: {cmd}\nResponse: {response}")
         except Exception as e:
             messagebox.showerror("Error", str(e))
+            logger.error("Command failed: %s", e)
             
     def send_server_message(self):
         """Send a message to all players"""
         message = tk.simpledialog.askstring("Server Message", "Enter message to broadcast:")
         if message:
-            try:
-                # Replace spaces with underscores for RCON compatibility
-                safe_message = message.replace(' ', '_')
-                response = self.rcon.execute_command(f'servermsg "{safe_message}"')
-                self.log_command_output(f"Broadcast: {message}\nResponse: {response}")
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
+            response = self._send_server_message(message)
+            if not response:
+                messagebox.showerror("Error", "Failed to send message - check connection")
                 
     def execute_custom_command(self):
         """Execute a custom RCON command"""
@@ -1962,15 +2053,16 @@ Screen:
         if not cmd:
             return
         
-        if not self.rcon:
-            messagebox.showwarning("Not Connected", "Please connect to the server first")
+        if not self._ensure_connected():
             return
         
         try:
             response = self.rcon.execute_command(cmd)
             self.log_command_output(f"Command: {cmd}\nResponse: {response}")
+            logger.info("Custom command executed: %s", cmd)
         except Exception as e:
             messagebox.showerror("Error", str(e))
+            logger.error("Custom command failed: %s", e)
             
     def log_command_output(self, text):
         """Log command output to the commands tab"""
@@ -2113,38 +2205,15 @@ Screen:
         try:
             server_path = Path(self.server_path.get())
             
-            # Search multiple locations for config file
-            config_locations = [
-                server_path / 'Server',              # ~/Zomboid/Server
-                server_path,                          # Direct path
-                Path.home() / 'Zomboid' / 'Server',  # Fallback
-                Path.home() / '.local' / 'share' / 'Zomboid' / 'Server',
-            ]
+            # Use utils to find config file
+            config_file = find_config_file(server_path)
             
-            mods = []
-            workshop_ids = []
-            config_found = None
+            if not config_file:
+                self.log_command_output("No server config file found with mod information.")
+                return
             
-            for config_dir in config_locations:
-                if config_dir.exists():
-                    for ini_file in config_dir.glob('*.ini'):
-                        with open(ini_file, 'r', encoding='utf-8', errors='ignore') as f:
-                            content = f.read()
-                            
-                            # Parse mods and workshop IDs
-                            for line in content.split('\n'):
-                                if line.startswith('Mods='):
-                                    mods_str = line.split('=')[1].strip()
-                                    mods = [m.strip() for m in mods_str.split(';') if m.strip()]
-                                elif line.startswith('WorkshopItems='):
-                                    workshop_str = line.split('=')[1].strip()
-                                    workshop_ids = [w.strip() for w in workshop_str.split(';') if w.strip()]
-                            
-                            if mods or workshop_ids:
-                                config_found = ini_file
-                                break
-                if config_found:
-                    break
+            # Parse mods and workshop IDs using utils
+            mods, workshop_ids = parse_mods_and_workshop(config_file)
             
             # Populate mods list (left panel) - clean display
             for i, mod in enumerate(mods):
@@ -2155,14 +2224,11 @@ Screen:
                 self.workshop_tree.insert('', tk.END, text=str(i+1), values=(workshop_id,))
             
             # Simple summary
-            if config_found:
-                self.log_command_output(
-                    f"Mods: {len(mods)} | Workshop IDs: {len(workshop_ids)}\n"
-                    f"Config: {config_found}\n"
-                    f"Double-click any Workshop ID to view on Steam Workshop."
-                )
-            else:
-                self.log_command_output("No server config file found with mod information.")
+            self.log_command_output(
+                f"Mods: {len(mods)} | Workshop IDs: {len(workshop_ids)}\n"
+                f"Config: {config_file}\n"
+                f"Double-click any Workshop ID to view on Steam Workshop."
+            )
                     
         except Exception as e:
             messagebox.showerror("Error", f"Failed to read mods: {str(e)}")
@@ -2354,10 +2420,10 @@ Screen:
             
             # Try multiple possible locations for banlist
             banlist_paths = [
-                server_path / 'Server' / 'banlist.txt',              # ~/Zomboid/Server/banlist.txt
-                server_path / 'banlist.txt',                          # Direct in server_path
-                Path.home() / 'Zomboid' / 'Server' / 'banlist.txt',  # Fallback to home
-                Path.home() / '.local' / 'share' / 'Zomboid' / 'Server' / 'banlist.txt',  # Alt Linux
+                server_path / 'Server' / 'banlist.txt',
+                server_path / 'banlist.txt',
+                Path.home() / 'Zomboid' / 'Server' / 'banlist.txt',
+                Path.home() / '.local' / 'share' / 'Zomboid' / 'Server' / 'banlist.txt',
             ]
             
             banlist_file = None
@@ -2373,37 +2439,20 @@ Screen:
                                        "\n".join(f"  - {p}" for p in banlist_paths[:3]))
                 return
             
-            # Read ban list
-            with open(banlist_file, 'r', encoding='utf-8', errors='ignore') as f:
-                lines = f.readlines()
+            # Parse ban list using utils
+            bans = parse_banlist(banlist_file)
             
-            if not lines:
+            if not bans:
                 self.banlist_tree.insert('', tk.END, text='0',
                                         values=('No bans', '', '', ''))
                 return
             
-            # Parse ban list - format varies, so we'll handle different formats
-            count = 0
-            for line in lines:
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-                
-                # Try to parse different formats
-                # Format 1: username,ip,reason
-                # Format 2: username
-                parts = line.split(',')
-                
-                username = parts[0] if len(parts) > 0 else 'Unknown'
-                ip = parts[1] if len(parts) > 1 else 'N/A'
-                reason = parts[2] if len(parts) > 2 else 'No reason specified'
-                date = 'N/A'  # Banlist doesn't typically store dates
-                
-                count += 1
-                self.banlist_tree.insert('', tk.END, text=str(count),
+            # Populate ban list
+            for i, (username, ip, reason, date) in enumerate(bans, 1):
+                self.banlist_tree.insert('', tk.END, text=str(i),
                                         values=(username, ip, reason, date))
             
-            self.log_command_output(f"Loaded {count} banned users from {banlist_file}")
+            self.log_command_output(f"Loaded {len(bans)} banned users from {banlist_file}")
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to read ban list: {str(e)}")
@@ -2591,6 +2640,9 @@ Screen:
             choice_window = tk.Toplevel(self)
             choice_window.title("Select Server Path")
             choice_window.geometry("600x300")
+            choice_window.transient(self)
+            choice_window.grab_set()
+            self.apply_dialog_theme(choice_window)
             
             ttk.Label(choice_window, text="Multiple server paths found. Select one:").pack(pady=10)
             
@@ -3143,7 +3195,7 @@ class SettingsEditorWindow(tk.Toplevel):
         self.lua_file = lua_file
         
         self.title(f"Server Settings Editor - {ini_file.name if ini_file else 'No File'}")
-        self.geometry("900x700")  # Increased from 800x600
+        self.geometry("950x750")  # Increased from 800x600
         
         # Apply theme from parent
         if hasattr(parent, 'current_theme'):
@@ -5366,6 +5418,138 @@ class SettingsEditorWindow(tk.Toplevel):
         combo.grid(row=row, column=1, sticky=tk.W, padx=5, pady=5)
         self.settings[key] = {'widget': combo, 'var': var, 'type': 'choice', 'choices': choices, 'is_lua': is_lua}
     
+    def _parse_sandbox_lua(self, content):
+        """
+        Parse a SandboxVars.lua file into a structured key map, properly
+        tracking nesting depth and parent table names while ignoring content
+        inside string literals and line comments.
+
+        For each key, the FIRST occurrence at the SHALLOWEST depth is recorded.
+        This naturally selects vanilla PZ keys (which appear early and at
+        lower depth) over mod sub-table keys that may share the same name but
+        appear later in the file.
+
+        Returns:
+            key_info : dict
+                { key: {'value': str, 'line': int, 'depth': int, 'parent': str} }
+                'line' is the 0-based index into content.split('\\n'), used for
+                exact targeted replacement in _write_sandbox_lua.
+        """
+        lines = content.split('\n')
+        depth = 0
+        table_stack = []   # names of currently-open tables
+        key_info = {}      # key -> {value, line, depth, parent}
+
+        for line_num, line in enumerate(lines):
+            depth_at_line = depth  # depth BEFORE processing this line
+
+            # Build the effective line: strip inline comments, keep strings intact
+            effective = []
+            in_str = False
+            str_char = None
+            ci = 0
+            while ci < len(line):
+                ch = line[ci]
+                if in_str:
+                    effective.append(ch)
+                    if ch == str_char and (ci == 0 or line[ci - 1] != '\\'):
+                        in_str = False
+                else:
+                    if ch in ('"', "'"):
+                        in_str = True
+                        str_char = ch
+                        effective.append(ch)
+                    elif ch == '-' and ci + 1 < len(line) and line[ci + 1] == '-':
+                        break  # rest of line is a comment
+                    else:
+                        effective.append(ch)
+                ci += 1
+            eff = ''.join(effective)
+            eff_stripped = eff.strip()
+
+            # Detect sub-table open: "Name = {" or "Name = {  -- comment"
+            m_open = re.match(r'^(\w+)\s*=\s*\{', eff_stripped)
+            open_count = eff.count('{')
+            close_count = eff.count('}')
+
+            # Push table name onto stack before counting depth change
+            if open_count > 0 and m_open:
+                table_stack.append(m_open.group(1))
+
+            # Update depth
+            depth += open_count - close_count
+
+            # Pop table stack for each closing brace
+            for _ in range(close_count):
+                if table_stack:
+                    table_stack.pop()
+
+            # Extract plain key=value pairs (lines that do NOT open a sub-table)
+            if eff_stripped and not eff_stripped.rstrip().endswith('{'):
+                m_val = re.match(r'^(\w+)\s*=\s*(.+?)(?:,\s*)?$', eff_stripped)
+                if m_val:
+                    key = m_val.group(1)
+                    value = m_val.group(2).strip().rstrip(',').strip()
+                    parent = table_stack[-1] if table_stack else 'SandboxVars'
+
+                    # Keep first occurrence; if same key appears again at a
+                    # shallower depth, prefer the shallower one (shouldn't
+                    # happen in well-formed files, but guards against edge cases)
+                    if key not in key_info or depth_at_line < key_info[key]['depth']:
+                        key_info[key] = {
+                            'value': value,
+                            'line': line_num,
+                            'depth': depth_at_line,
+                            'parent': parent,
+                        }
+
+        return key_info
+
+    def _write_sandbox_lua(self, content, updates, key_info):
+        """
+        Write updated key values back to a SandboxVars.lua file using EXACT
+        LINE TARGETING.  Instead of regex-scanning the entire file for each
+        key (which risks false matches in mod sub-tables or long key names),
+        this method uses the precise line numbers recorded by _parse_sandbox_lua
+        and replaces only those specific lines.
+
+        Lines that were not identified during parsing are never touched, so
+        mod sub-tables are completely safe regardless of their key names.
+
+        Args:
+            content  : original file content string
+            updates  : dict { key: new_value_str }
+            key_info : dict returned by _parse_sandbox_lua
+
+        Returns the updated content string.
+        """
+        lines = content.split('\n')
+
+        # Pre-build a line_num -> (key, new_value) map so we only loop once
+        line_updates = {}
+        for key, new_value in updates.items():
+            if key in key_info:
+                target_line = key_info[key]['line']
+                line_updates[target_line] = (key, new_value)
+
+        new_lines = []
+        for line_num, line in enumerate(lines):
+            if line_num in line_updates:
+                key, new_value = line_updates[line_num]
+                # Replace only the value portion; preserve indentation,
+                # the key name, the '=', and the trailing comma/whitespace
+                m = re.match(
+                    rf'^(\s*{re.escape(key)}\s*=\s*)([^,\n]+?)(,?\s*)$',
+                    line.rstrip('\n')
+                )
+                if m:
+                    # Reconstruct line without adding an extra newline
+                    # ('\n'.join below handles the separator)
+                    line = f"{m.group(1)}{new_value}{m.group(3)}"
+            new_lines.append(line)
+
+        return '\n'.join(new_lines)
+
     def load_settings(self):
         """Load settings from config files"""
         # Load .ini file
@@ -5388,50 +5572,51 @@ class SettingsEditorWindow(tk.Toplevel):
                             elif widget_info['type'] == 'bool':
                                 widget_info['var'].set(value.lower() == 'true')
         
-        # Load .lua file (basic parsing)
+        # Load .lua file using proper depth-aware parser
         if self.lua_file and self.lua_file.exists():
             with open(self.lua_file, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()
-                
-                for key in self.settings:
-                    if self.settings[key]['is_lua']:
-                        # Simple regex to find setting
-                        pattern = rf'{key}\s*=\s*([^,\n]+)'
-                        match = re.search(pattern, content)
-                        if match:
-                            value = match.group(1).strip().rstrip(',')
-                            self.original_values[key] = value
-                            widget_info = self.settings[key]
-                            
-                            if widget_info['type'] == 'number':
-                                widget_info['widget'].delete(0, tk.END)
-                                widget_info['widget'].insert(0, value)
-                            elif widget_info['type'] == 'bool':
-                                widget_info['var'].set(value.lower() == 'true')
-                            elif widget_info['type'] == 'slider':
-                                # Set slider value
-                                try:
-                                    widget_info['var'].set(float(value))
-                                except ValueError:
-                                    pass
-                            elif widget_info['type'] == 'choice':
-                                # Find the choice that matches the value
-                                # Try as int first, then float
-                                try:
-                                    if '.' in value:
-                                        float_val = float(value)
-                                        for choice_name, choice_val in widget_info['choices'].items():
-                                            if choice_val == float_val:
-                                                widget_info['var'].set(choice_name)
-                                                break
-                                    else:
-                                        int_val = int(value)
-                                        for choice_name, choice_val in widget_info['choices'].items():
-                                            if choice_val == int_val:
-                                                widget_info['var'].set(choice_name)
-                                                break
-                                except ValueError:
-                                    pass
+
+            # Parse structure - returns first/shallowest occurrence of each key
+            key_info = self._parse_sandbox_lua(content)
+
+            for key in self.settings:
+                if self.settings[key]['is_lua']:
+                    info = key_info.get(key)
+                    if info is None:
+                        continue
+
+                    value = info['value']
+                    self.original_values[key] = value
+                    widget_info = self.settings[key]
+
+                    if widget_info['type'] == 'number':
+                        widget_info['widget'].delete(0, tk.END)
+                        widget_info['widget'].insert(0, value)
+                    elif widget_info['type'] == 'bool':
+                        widget_info['var'].set(value.lower() == 'true')
+                    elif widget_info['type'] == 'slider':
+                        try:
+                            widget_info['var'].set(float(value))
+                        except ValueError:
+                            pass
+                    elif widget_info['type'] == 'choice':
+                        # Try as int first, then float
+                        try:
+                            if '.' in value:
+                                float_val = float(value)
+                                for choice_name, choice_val in widget_info['choices'].items():
+                                    if choice_val == float_val:
+                                        widget_info['var'].set(choice_name)
+                                        break
+                            else:
+                                int_val = int(value)
+                                for choice_name, choice_val in widget_info['choices'].items():
+                                    if choice_val == int_val:
+                                        widget_info['var'].set(choice_name)
+                                        break
+                        except ValueError:
+                            pass
         
         # Check for corrupted values after loading
         self.check_and_repair_corruption()
@@ -5621,17 +5806,20 @@ class SettingsEditorWindow(tk.Toplevel):
                 with open(self.ini_file, 'w', encoding='utf-8') as f:
                     f.writelines(new_lines)
             
-            # Save .lua file
+            # Save .lua file using proper depth-aware, exact-line-targeting writer
             if self.lua_file and self.lua_file.exists():
                 with open(self.lua_file, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
-                
-                # Update each Lua setting
+
+                # Parse to get exact line numbers for each key
+                key_info = self._parse_sandbox_lua(content)
+
+                # Build the updates dict: only lua settings
+                updates = {}
                 for key in self.settings:
                     if self.settings[key]['is_lua']:
                         widget_info = self.settings[key]
-                        
-                        # Get new value
+
                         if widget_info['type'] == 'number':
                             new_value = widget_info['widget'].get()
                         elif widget_info['type'] == 'bool':
@@ -5645,13 +5833,12 @@ class SettingsEditorWindow(tk.Toplevel):
                             new_value = str(widget_info['choices'][selected])
                         else:
                             continue
-                        
-                        # Replace in content using regex
-                        pattern = rf'({key}\s*=\s*)([^,\n]+)'
-                        replacement = rf'\g<1>{new_value}'
-                        content = re.sub(pattern, replacement, content)
-                
-                # Write back
+
+                        updates[key] = new_value
+
+                # Write back using exact line targeting - mod sub-tables untouched
+                content = self._write_sandbox_lua(content, updates, key_info)
+
                 with open(self.lua_file, 'w', encoding='utf-8') as f:
                     f.write(content)
             
