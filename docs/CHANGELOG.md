@@ -2,6 +2,44 @@
 
 All notable changes to the Project Zomboid Server Admin Tool will be documented in this file.
 
+## [2.4.3] - 2026-02-10
+
+### UI/UX Improvements
+- **Better Status Indicator**: Connection status now more prominent with bold, larger font
+- **Notification Helpers**: Added `notify_success()`, `notify_error()`, `notify_warning()` for consistent UI feedback
+- **Visual Style**: Disconnect button now uses Danger style (red) for better visual clarity
+- **State Management**: New `update_ui_state()` method for consistent UI updates
+
+### User Experience
+- Better visual feedback on connection success/failure
+- Consistent emoji usage in notifications (✅ ❌ ⚠️)
+- Improved accessibility with larger status font
+- Better error messaging with styled notifications
+
+## [2.4.2] - 2026-02-10
+
+### Improved
+- **Connection Validation**: Added `_ensure_connected()` helper for consistent connection checks across all command functions
+- **Server Message Helper**: New `_send_server_message()` for centralized broadcast message sending
+- **Better Logging**: Added structured logging for command execution and failures
+- **Code Consistency**: Updated command functions to use connection validation helper
+
+### Technical
+- Reduced code duplication in command execution paths
+- Better error tracking for debugging connection issues
+- Consistent connection state validation across UI functions
+
+## [2.4.1] - 2026-02-10
+
+### Improved
+- **Code Cleanup**: Integrated `utils.py` module into main application
+- **Reduced Duplication**: Replaced inline mods/banlist parsing with reusable utility functions
+- **Better Maintainability**: Path detection and file parsing now centralized in utils module
+
+### Fixed
+- **Missing Import**: Added `datetime` import (was causing startup error)
+- **Treeview Font Scaling**: Fixed mods tab text clipping at larger font sizes
+
 ## [2.4.0] - 2026-02-10
 
 ### Added
