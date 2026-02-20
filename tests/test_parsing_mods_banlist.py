@@ -38,12 +38,10 @@ def test_mods_and_workshop_parsing():
         workshop = [app.workshop_tree.item(i)['values'][0] for i in app.workshop_tree.get_children()]
 
         assert mods == ['modA', 'modB', 'modC'], f'mods parsed incorrectly: {mods}'
-        # Workshop IDs may be stored as ints by the tree; normalize to strings for comparison
         workshop_strs = [str(w) for w in workshop]
         assert workshop_strs == ['11111', '22222', '33333'], f'workshop parsed incorrectly: {workshop}'
 
         app.destroy()
-        print('test_mods_and_workshop_parsing: OK')
     finally:
         shutil.rmtree(tmp)
 
@@ -62,25 +60,15 @@ def test_banlist_parsing():
         app = PZServerAdmin()
         app.server_path.set(tmp)
 
-        # Clear banlist tree
         for item in app.banlist_tree.get_children():
             app.banlist_tree.delete(item)
 
         app.refresh_banlist()
 
         entries = [app.banlist_tree.item(i)['values'] for i in app.banlist_tree.get_children()]
-        # entries are tuples (Username, IP, Reason, Date)
         assert any(e[0] == 'alice' and e[1] == '1.2.3.4' for e in entries), f"alice not parsed: {entries}"
         assert any(e[0] == 'bob' for e in entries), f"bob not parsed: {entries}"
 
         app.destroy()
-        print('test_banlist_parsing: OK')
     finally:
         shutil.rmtree(tmp)
-
-
-if __name__ == '__main__':
-    test_mods_and_workshop_parsing()
-    test_banlist_parsing()
-    print('All parsing tests passed')
-    raise SystemExit(0)

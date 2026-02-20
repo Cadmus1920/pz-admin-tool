@@ -3,6 +3,11 @@ import os
 import socket
 import struct
 import threading
+import sys
+import os
+import socket
+import struct
+import threading
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -144,14 +149,7 @@ def test_rcon_connect_and_auth():
         client.connect()
         assert client.authenticated
         assert client.sock is not None
-        print('test_rcon_connect_and_auth: OK')
         client.disconnect()
-        return 0
-    except Exception as e:
-        print(f'test_rcon_connect_and_auth: FAILED - {e}')
-        import traceback
-        print(traceback.format_exc())
-        return 1
     finally:
         server.stop()
         time.sleep(0.2)
@@ -165,17 +163,10 @@ def test_rcon_wrong_password():
     
     try:
         client = RCONClient('127.0.0.1', 19998, 'wrongpass')
-        try:
+        import pytest
+        with pytest.raises(Exception) as exc:
             client.connect()
-            print('test_rcon_wrong_password: FAILED - should have raised exception')
-            return 1
-        except Exception as e:
-            if 'Authentication failed' in str(e):
-                print('test_rcon_wrong_password: OK')
-                return 0
-            else:
-                print(f'test_rcon_wrong_password: FAILED - wrong error: {e}')
-                return 1
+        assert 'Authentication failed' in str(exc.value)
     finally:
         server.stop()
         time.sleep(0.2)
@@ -193,29 +184,7 @@ def test_rcon_execute_command():
         
         response = client.execute_command('test')
         assert 'test response' in response, f"Expected 'test response' in '{response}'"
-        
-        print('test_rcon_execute_command: OK')
         client.disconnect()
-        return 0
-    except Exception as e:
-        import traceback
-        print(f'test_rcon_execute_command: FAILED')
-        print(traceback.format_exc())
-        return 1
     finally:
         server.stop()
         time.sleep(0.2)
-
-
-if __name__ == '__main__':
-    codes = []
-    codes.append(test_rcon_connect_and_auth())
-    codes.append(test_rcon_wrong_password())
-    codes.append(test_rcon_execute_command())
-    
-    failed = [c for c in codes if c != 0]
-    if failed:
-        print(f'Integration tests: {len(failed)} failed')
-        raise SystemExit(1)
-    print('All integration tests passed')
-    raise SystemExit(0)

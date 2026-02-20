@@ -6,6 +6,14 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from pz_admin_tool import RCONClient
 
+import sys
+import os
+import socket
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from pz_admin_tool import RCONClient
+
 
 class FakeSockError:
     def recv(self, n):
@@ -25,11 +33,7 @@ def test_recv_all_partial():
         s2.sendall(data[5:])
 
         got = client._recv_all(len(data))
-        if got != data:
-            print('test_recv_all_partial: FAILED', got)
-            return 2
-        print('test_recv_all_partial: OK')
-        return 0
+        assert got == data
     finally:
         s1.close(); s2.close()
 
@@ -43,11 +47,7 @@ def test_recv_all_peer_closed_returns_none():
         # Close peer without sending
         s2.close()
         got = client._recv_all(10)
-        if got is not None:
-            print('test_recv_all_peer_closed_returns_none: FAILED', got)
-            return 3
-        print('test_recv_all_peer_closed_returns_none: OK')
-        return 0
+        assert got is None
     finally:
         try:
             s1.close()
@@ -59,22 +59,4 @@ def test_recv_all_recv_raises_returns_none():
     client = RCONClient('127.0.0.1', 1234, 'pw')
     client.sock = FakeSockError()
     got = client._recv_all(5)
-    if got is not None:
-        print('test_recv_all_recv_raises_returns_none: FAILED', got)
-        return 4
-    print('test_recv_all_recv_raises_returns_none: OK')
-    return 0
-
-
-if __name__ == '__main__':
-    codes = []
-    codes.append(test_recv_all_partial())
-    codes.append(test_recv_all_peer_closed_returns_none())
-    codes.append(test_recv_all_recv_raises_returns_none())
-
-    failed = [c for c in codes if c != 0]
-    if failed:
-        print('Some tests failed:', failed)
-        raise SystemExit(1)
-    print('All _recv_all tests passed')
-    raise SystemExit(0)
+    assert got is None
