@@ -38,11 +38,6 @@ class RCONClient:
     def connect(self):
         """Establish connection to RCON server and authenticate"""
         try:
-            # DEBUG: Print what we're using
-            print(f"DEBUG: Connecting to {self.host}:{self.port}")
-            print(f"DEBUG: Password = {repr(self.password)}")
-            print(f"DEBUG: Password length = {len(self.password)}")
-            print(f"DEBUG: Password hex = {self.password.encode('utf-8').hex()}")
             
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.settimeout(10)
@@ -62,7 +57,6 @@ class RCONClient:
             packet += struct.pack('<i', self.SERVERDATA_AUTH)  # type
             packet += packet_data
             
-            print(f"DEBUG: Sending auth packet: {packet.hex()}")
             
             self.sock.sendall(packet)
             
@@ -1061,7 +1055,6 @@ Created with ❤️ for the PZ community
                     return
             
             # Debug: show what we're actually using
-            print(f"DEBUG: Connecting to {repr(host)}:{port} with password {repr(password)}")
             
             # Create RCON client and connect
             self.rcon = RCONClient(host, port, password)
@@ -1076,7 +1069,6 @@ Created with ❤️ for the PZ community
             
         except Exception as e:
             error_msg = str(e)
-            print(f"DEBUG: Connection error: {error_msg}")
             messagebox.showerror("Connection Error", error_msg)
             self.status_label.config(text="Status: Connection Failed", foreground="red")
             self.rcon = None
