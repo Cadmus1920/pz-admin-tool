@@ -18,8 +18,224 @@ import webbrowser
 import logging
 from datetime import datetime
 from pathlib import Path
-from rcon import RCONClient
-from utils import parse_mods_and_workshop, parse_banlist, find_config_file, find_log_file, find_server_path
+# ---------------------------------------------------------------------------
+# Inlined: rcon.py
+# ---------------------------------------------------------------------------
+class RCONClient:
+    """RCON client for communicating with Project Zomboid server."""
+
+    SERVERDATA_AUTH = 3
+    SERVERDATA_AUTH_RESPONSE = 2
+    SERVERDATA_EXECCOMMAND = 2
+    SERVERDATA_RESPONSE_VALUE = 0
+
+    def __init__(self, host, port, password):
+        self.host = host
+        self.port = port
+        self.password = password
+        self.sock = None
+        self.request_id = 0
+        self.authenticated = False
+
+    def connect(self):
+        """Establish connection to RCON server and authenticate."""
+        try:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.settimeout(10)
+            self.sock.connect((self.host, self.port))
+            self.request_id += 1
+            auth_id = self.request_id
+            auth_body = self.password.encode('utf-8')
+            packet_data = auth_body + b'\x00\x00'
+            packet_size = 4 + 4 + len(packet_data)
+            packet = struct.pack('<i', packet_size)
+            packet += struct.pack('<i', auth_id)
+            packet += struct.pack('<i', self.SERVERDATA_AUTH)
+            packet += packet_data
+            self.sock.sendall(packet)
+            size_data = self._recv_all(4)
+            if not size_data:
+                raise Exception("Auth failed - no response")
+            response_size = struct.unpack('<i', size_data)[0]
+            response_data = self._recv_all(response_size)
+            if not response_data or len(response_data) < 8:
+                raise Exception("Auth failed - incomplete response")
+            first_packet_type = struct.unpack('<i', response_data[4:8])[0]
+            if first_packet_type == self.SERVERDATA_RESPONSE_VALUE:
+                size_data = self._recv_all(4)
+                if not size_data:
+                    raise Exception("Auth failed - no auth response")
+                response_size = struct.unpack('<i', size_data)[0]
+                response_data = self._recv_all(response_size)
+                if not response_data or len(response_data) < 4:
+                    raise Exception("Auth failed - incomplete auth response")
+            response_id = struct.unpack('<i', response_data[:4])[0]
+            if response_id == -1:
+                raise Exception("Authentication failed - wrong password")
+            self.authenticated = True
+            return True
+        except socket.timeout:
+            raise Exception("Connection timed out - check host and port")
+        except ConnectionRefusedError:
+            raise Exception("Connection refused - is RCON enabled and server running?")
+        except Exception:
+            if self.sock:
+                try:
+                    self.sock.close()
+                except Exception:
+                    pass
+                self.sock = None
+            raise
+
+    def disconnect(self):
+        """Close RCON connection."""
+        if self.sock:
+            try:
+                self.sock.close()
+            except (OSError, socket.error):
+                pass
+            self.sock = None
+            self.authenticated = False
+
+    def execute_command(self, command):
+        """Execute a command on the server using existing connection."""
+        if not self.sock or not self.authenticated:
+            raise Exception("Not connected to server")
+        try:
+            self.request_id += 1
+            cmd_id = self.request_id
+            cmd_body = command.encode('utf-8')
+            packet_data = cmd_body + b'\x00\x00'
+            packet_size = 4 + 4 + len(packet_data)
+            packet = struct.pack('<i', packet_size)
+            packet += struct.pack('<i', cmd_id)
+            packet += struct.pack('<i', self.SERVERDATA_EXECCOMMAND)
+            packet += packet_data
+            self.sock.sendall(packet)
+            response_text = ""
+            size_data = self._recv_all(4)
+            if size_data:
+                response_size = struct.unpack('<i', size_data)[0]
+                response_data = self._recv_all(response_size)
+                if response_data and len(response_data) >= 8:
+                    response_text = response_data[8:].rstrip(b'\x00').decode('utf-8', errors='ignore')
+            return response_text
+        except (BrokenPipeError, ConnectionResetError):
+            self.authenticated = False
+            raise Exception("Connection lost - please reconnect")
+        except socket.timeout:
+            raise Exception("Command timed out")
+        except Exception as e:
+            raise Exception(f"Command failed: {str(e)}")
+
+    def _recv_all(self, n):
+        """Receive exactly n bytes from socket."""
+        data = b''
+        while len(data) < n:
+            try:
+                chunk = self.sock.recv(n - len(data))
+                if not chunk:
+                    return None
+                data += chunk
+            except socket.error:
+                return None
+        return data
+
+
+# ---------------------------------------------------------------------------
+# Inlined: utils.py
+# ---------------------------------------------------------------------------
+def parse_mods_and_workshop(ini_file):
+    """Parse mods and workshop items from server INI file."""
+    mods = []
+    workshop_ids = []
+    try:
+        with open(ini_file, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+            for line in content.split('\n'):
+                if line.startswith('Mods='):
+                    mods_str = line.split('=', 1)[1].strip()
+                    mods = [m.strip() for m in mods_str.split(';') if m.strip()]
+                elif line.startswith('WorkshopItems='):
+                    workshop_str = line.split('=', 1)[1].strip()
+                    workshop_ids = [w.strip() for w in workshop_str.split(';') if w.strip()]
+    except Exception as e:
+        logger.error("Failed to parse mods from %s: %s", ini_file, e)
+    return mods, workshop_ids
+
+
+def parse_banlist(banlist_file):
+    """Parse ban list from banlist.txt file."""
+    bans = []
+    try:
+        with open(banlist_file, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                parts = line.split(',')
+                username = parts[0] if len(parts) > 0 else 'Unknown'
+                ip = parts[1] if len(parts) > 1 else 'N/A'
+                reason = parts[2] if len(parts) > 2 else 'No reason specified'
+                bans.append((username, ip, 'N/A', reason))
+    except Exception as e:
+        logger.error("Failed to parse banlist from %s: %s", banlist_file, e)
+    return bans
+
+
+def find_server_path(start_path):
+    """Auto-detect Project Zomboid server paths."""
+    data_paths = [
+        Path.home() / "Zomboid",
+        Path.home() / ".local" / "share" / "Zomboid",
+    ]
+    install_paths = [
+        Path.home() / ".steam" / "steamapps" / "common" / "Project Zomboid Dedicated Server",
+        Path.home() / "Steam" / "steamapps" / "common" / "Project Zomboid Dedicated Server",
+        Path("/home/pzserver/.steam/steamapps/common/Project Zomboid Dedicated Server"),
+        Path("/opt/pzserver"),
+        Path.home() / ".local" / "share" / "Steam" / "steamapps" / "common" / "Project Zomboid Dedicated Server",
+    ]
+    for path in data_paths:
+        server_dir = path / 'Server'
+        if server_dir.exists():
+            has_ini = any(f.endswith('.ini') for f in os.listdir(server_dir)
+                         if os.path.isfile(os.path.join(server_dir, f)))
+            if has_ini:
+                return path
+    for path in install_paths:
+        if path.exists():
+            return path
+    return None
+
+
+def find_config_file(server_path):
+    """Find the server .ini config file."""
+    search_dirs = [
+        server_path / 'Server',
+        server_path,
+        Path.home() / 'Zomboid' / 'Server',
+        Path.home() / '.local' / 'share' / 'Zomboid' / 'Server',
+    ]
+    for search_dir in search_dirs:
+        if search_dir.exists():
+            for ini_file in search_dir.glob('*.ini'):
+                return ini_file
+    return None
+
+
+def find_log_file(server_path):
+    """Find the server log directory."""
+    log_locations = [
+        server_path / 'Logs',
+        server_path.parent / 'Logs',
+        Path.home() / 'Zomboid' / 'Logs',
+        Path.home() / '.local' / 'share' / 'Zomboid' / 'Logs',
+    ]
+    for log_dir in log_locations:
+        if log_dir.exists() and log_dir.is_dir():
+            return log_dir
+    return None
 
 # Set up logging
 logging.basicConfig(
