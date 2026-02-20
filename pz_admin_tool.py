@@ -3547,8 +3547,10 @@ class SettingsEditorWindow(tk.Toplevel):
             'Navigate + Use Doors': 1, 'Navigate': 2, 'Basic Navigation': 3, 'Random': 4
         }, is_lua=True)
         row += 1
-        
-        # Zombie Memory
+
+        # Door Opening Percentage (only relevant when cognition allows door use)
+        self.add_number_setting(scrollable_frame, 'DoorOpeningPercentage', 'Door Opening Chance (0-100%):', row, 0, 100, is_lua=True)
+        row += 1
         self.add_choice_setting(scrollable_frame, 'Memory', 'Zombie Memory:', row, {
             'Long': 1, 'Normal': 2, 'Short': 3, 'None': 4, 'Random': 5, 'Random (Normal-None)': 6
         }, is_lua=True)
@@ -3884,6 +3886,10 @@ class SettingsEditorWindow(tk.Toplevel):
         row += 1
         self.add_slider_setting(scrollable_frame, 'LiteratureLootNew', 'Literature (Books, Magazines):', row, 0, 4, 0.1, is_lua=True)
         row += 1
+        self.add_slider_setting(scrollable_frame, 'SkillBookLoot', 'Skill Books (XP Multipliers):', row, 0, 4, 0.1, is_lua=True)
+        row += 1
+        self.add_slider_setting(scrollable_frame, 'RecipeResourceLoot', 'Recipe Books:', row, 0, 4, 0.1, is_lua=True)
+        row += 1
         self.add_slider_setting(scrollable_frame, 'MedicalLootNew', 'Medical Supplies:', row, 0, 4, 0.1, is_lua=True)
         row += 1
         self.add_slider_setting(scrollable_frame, 'SurvivalGearsLootNew', 'Survival Gear (Camping):', row, 0, 4, 0.1, is_lua=True)
@@ -4114,7 +4120,42 @@ class SettingsEditorWindow(tk.Toplevel):
         # Car Gas Consumption
         self.add_slider_setting(scrollable_frame, 'CarGasConsumption', 'Gas Consumption:', row, 0, 100, 0.1, is_lua=True)
         row += 1
-        
+
+        # Initial Gas in vehicles
+        self.add_choice_setting(scrollable_frame, 'InitialGas', 'Initial Gas in Vehicles:', row, {
+            'Very Low': 1, 'Low': 2, 'Normal': 3, 'High': 4, 'Very High': 5, 'Full': 6
+        }, is_lua=True)
+        row += 1
+
+        # Chance vehicle has gas at all
+        self.add_choice_setting(scrollable_frame, 'ChanceHasGas', 'Chance Vehicle Has Gas:', row, {
+            'Low': 1, 'Normal': 2, 'High': 3
+        }, is_lua=True)
+        row += 1
+
+        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky='ew', pady=10)
+        row += 1
+
+        ttk.Label(scrollable_frame, text="Fuel Station Settings",
+                 font=('TkDefaultFont', 9, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        row += 1
+
+        # Infinite fuel stations
+        self.add_bool_setting(scrollable_frame, 'FuelStationGasInfinite', 'Infinite Fuel (Never Run Out):', row, is_lua=True)
+        row += 1
+
+        # Min gas in pumps
+        self.add_slider_setting(scrollable_frame, 'FuelStationGasMin', 'Pump Gas Min (0=Empty, 1=Full):', row, 0, 1, 0.01, is_lua=True)
+        row += 1
+
+        # Max gas in pumps
+        self.add_slider_setting(scrollable_frame, 'FuelStationGasMax', 'Pump Gas Max (0=Empty, 1=Full):', row, 0, 1, 0.01, is_lua=True)
+        row += 1
+
+        # Empty pump chance
+        self.add_number_setting(scrollable_frame, 'FuelStationGasEmptyChance', 'Empty Pump Chance (0-100%):', row, 0, 100, is_lua=True)
+        row += 1
+
         # Zombie Attraction Multiplier
         self.add_slider_setting(scrollable_frame, 'ZombieAttractionMultiplier', 'Engine Noise (Zombie Attraction):', row, 0, 100, 0.1, is_lua=True)
         row += 1
@@ -5425,25 +5466,22 @@ class SettingsEditorWindow(tk.Toplevel):
         inside string literals and line comments.
 
         For each key, the FIRST occurrence at the SHALLOWEST depth is recorded.
-        This naturally selects vanilla PZ keys (which appear early and at
-        lower depth) over mod sub-table keys that may share the same name but
-        appear later in the file.
+        This naturally selects vanilla PZ keys over mod sub-table keys that may
+        share the same name but appear later in the file.
 
         Returns:
             key_info : dict
                 { key: {'value': str, 'line': int, 'depth': int, 'parent': str} }
-                'line' is the 0-based index into content.split('\\n'), used for
-                exact targeted replacement in _write_sandbox_lua.
         """
         lines = content.split('\n')
         depth = 0
-        table_stack = []   # names of currently-open tables
-        key_info = {}      # key -> {value, line, depth, parent}
+        table_stack = []
+        key_info = {}
 
         for line_num, line in enumerate(lines):
-            depth_at_line = depth  # depth BEFORE processing this line
+            depth_at_line = depth
 
-            # Build the effective line: strip inline comments, keep strings intact
+            # Build effective line: strip inline comments, keep strings intact
             effective = []
             in_str = False
             str_char = None
@@ -5460,41 +5498,32 @@ class SettingsEditorWindow(tk.Toplevel):
                         str_char = ch
                         effective.append(ch)
                     elif ch == '-' and ci + 1 < len(line) and line[ci + 1] == '-':
-                        break  # rest of line is a comment
+                        break
                     else:
                         effective.append(ch)
                 ci += 1
             eff = ''.join(effective)
             eff_stripped = eff.strip()
 
-            # Detect sub-table open: "Name = {" or "Name = {  -- comment"
             m_open = re.match(r'^(\w+)\s*=\s*\{', eff_stripped)
             open_count = eff.count('{')
             close_count = eff.count('}')
 
-            # Push table name onto stack before counting depth change
             if open_count > 0 and m_open:
                 table_stack.append(m_open.group(1))
 
-            # Update depth
             depth += open_count - close_count
 
-            # Pop table stack for each closing brace
             for _ in range(close_count):
                 if table_stack:
                     table_stack.pop()
 
-            # Extract plain key=value pairs (lines that do NOT open a sub-table)
             if eff_stripped and not eff_stripped.rstrip().endswith('{'):
                 m_val = re.match(r'^(\w+)\s*=\s*(.+?)(?:,\s*)?$', eff_stripped)
                 if m_val:
                     key = m_val.group(1)
                     value = m_val.group(2).strip().rstrip(',').strip()
                     parent = table_stack[-1] if table_stack else 'SandboxVars'
-
-                    # Keep first occurrence; if same key appears again at a
-                    # shallower depth, prefer the shallower one (shouldn't
-                    # happen in well-formed files, but guards against edge cases)
                     if key not in key_info or depth_at_line < key_info[key]['depth']:
                         key_info[key] = {
                             'value': value,
@@ -5507,14 +5536,9 @@ class SettingsEditorWindow(tk.Toplevel):
 
     def _write_sandbox_lua(self, content, updates, key_info):
         """
-        Write updated key values back to a SandboxVars.lua file using EXACT
-        LINE TARGETING.  Instead of regex-scanning the entire file for each
-        key (which risks false matches in mod sub-tables or long key names),
-        this method uses the precise line numbers recorded by _parse_sandbox_lua
-        and replaces only those specific lines.
-
-        Lines that were not identified during parsing are never touched, so
-        mod sub-tables are completely safe regardless of their key names.
+        Write updated key values back using EXACT LINE TARGETING.
+        Uses the precise line numbers from _parse_sandbox_lua, so mod
+        sub-tables are never touched regardless of their key names.
 
         Args:
             content  : original file content string
@@ -5525,26 +5549,20 @@ class SettingsEditorWindow(tk.Toplevel):
         """
         lines = content.split('\n')
 
-        # Pre-build a line_num -> (key, new_value) map so we only loop once
         line_updates = {}
         for key, new_value in updates.items():
             if key in key_info:
-                target_line = key_info[key]['line']
-                line_updates[target_line] = (key, new_value)
+                line_updates[key_info[key]['line']] = (key, new_value)
 
         new_lines = []
         for line_num, line in enumerate(lines):
             if line_num in line_updates:
                 key, new_value = line_updates[line_num]
-                # Replace only the value portion; preserve indentation,
-                # the key name, the '=', and the trailing comma/whitespace
                 m = re.match(
                     rf'^(\s*{re.escape(key)}\s*=\s*)([^,\n]+?)(,?\s*)$',
                     line.rstrip('\n')
                 )
                 if m:
-                    # Reconstruct line without adding an extra newline
-                    # ('\n'.join below handles the separator)
                     line = f"{m.group(1)}{new_value}{m.group(3)}"
             new_lines.append(line)
 
@@ -5577,7 +5595,6 @@ class SettingsEditorWindow(tk.Toplevel):
             with open(self.lua_file, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()
 
-            # Parse structure - returns first/shallowest occurrence of each key
             key_info = self._parse_sandbox_lua(content)
 
             for key in self.settings:
@@ -5601,7 +5618,6 @@ class SettingsEditorWindow(tk.Toplevel):
                         except ValueError:
                             pass
                     elif widget_info['type'] == 'choice':
-                        # Try as int first, then float
                         try:
                             if '.' in value:
                                 float_val = float(value)
@@ -5811,10 +5827,8 @@ class SettingsEditorWindow(tk.Toplevel):
                 with open(self.lua_file, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
 
-                # Parse to get exact line numbers for each key
                 key_info = self._parse_sandbox_lua(content)
 
-                # Build the updates dict: only lua settings
                 updates = {}
                 for key in self.settings:
                     if self.settings[key]['is_lua']:
@@ -5836,7 +5850,6 @@ class SettingsEditorWindow(tk.Toplevel):
 
                         updates[key] = new_value
 
-                # Write back using exact line targeting - mod sub-tables untouched
                 content = self._write_sandbox_lua(content, updates, key_info)
 
                 with open(self.lua_file, 'w', encoding='utf-8') as f:
