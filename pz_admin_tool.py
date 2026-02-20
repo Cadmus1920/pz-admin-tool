@@ -35,7 +35,7 @@ class PZServerAdmin(tk.Tk):
     def __init__(self):
         super().__init__()
         
-        self.title("Project Zomboid Server Admin Tool v2.3.0")
+        self.title("Project Zomboid Server Admin Tool v2.5.0")
         self.geometry("1200x800")  # Increased from 1000x700
         
         self.rcon = None
@@ -430,7 +430,7 @@ class PZServerAdmin(tk.Tk):
     def show_about(self):
         """Show about dialog"""
         about_text = """Project Zomboid Server Administration Tool
-Version 2.4.3
+Version 2.5.0
 
 A comprehensive GUI tool for managing Project Zomboid dedicated servers.
 
